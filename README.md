@@ -1,2 +1,2 @@
 # games
-place games js code
+place games event handle javascript code here.
