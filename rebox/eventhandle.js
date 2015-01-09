@@ -62,12 +62,14 @@ function WinController(win) {
     };
     
     var setPositionCenterToRef = function(objRef, objMove) {
-        var x = objRef.x + (objRef.getWidth() - obj.getWidth()) / 2;
-        var y = objRef.y + (objRef.getHeight() - obj.getHeight()) / 2;
+        console.log("setPositionCenterToRef()");
+        var x = objRef.x + (objRef.getWidth() - objMove.getWidth()) / 2;
+        var y = objRef.y + (objRef.getHeight() - objMove.getHeight()) / 2;
         return objMove.setPosition(x, y);
     };
 
     var setPositionWinCenter = function(obj) {
+        console.log("setPositionWinCenter()");
         var x = (win.getWidth() - obj.getWidth()) / 2;
         var y = (win.getHeight() - obj.getHeight()) / 2;
         return obj.setPosition(x, y);
@@ -126,7 +128,7 @@ function WinController(win) {
         } else {
             btn = win.find('ResultFailed');
         }
-        setPositionWinCenter(me);        
+        setPositionWinCenter(btn);        
         btn.setVisible(true);
     };
     
