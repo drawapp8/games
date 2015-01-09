@@ -129,12 +129,11 @@ function WinController(win) {
         
         var btn;
         if (playResult === RESULT_SUCCESS){
-            btn = win.find('ResultSuccess');
+            win.find('ResultSuccess').setVisible(true).animate("top-in");
         } else {
-            btn = win.find('ResultFailed');
-        }
-        //setPositionWinCenter(btn);
-        btn.setVisible(true).animate("top-in");
+            btn = win.find('ResultFailed').setVisible(true).animate("bottom-in");
+        }        
+        
     };
     
     var checkResult = function() {
