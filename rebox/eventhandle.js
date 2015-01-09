@@ -1,5 +1,3 @@
-//todo: 解决class <> name 的转换问题
-
 function WinController(win) {
     var CLASSES_GOOD = [
         ["BoxYellowGood", "CircleYellowGood"]
