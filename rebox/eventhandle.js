@@ -1,3 +1,10 @@
+/***
+todo:
+0.看sublime能否提示来自其他js模块的自动完成
+1.add sound: 1) bkg 2)transform effect
+*/
+
+
 function WinController(win) {
     var CLASSES_GOOD = [
         ["BoxYellowGood", "CircleYellowGood"]
@@ -126,8 +133,8 @@ function WinController(win) {
         } else {
             btn = win.find('ResultFailed');
         }
-        setPositionWinCenter(btn);        
-        btn.setVisible(true);
+        //setPositionWinCenter(btn);
+        btn.setVisible(true).animate("top-in");
     };
     
     var checkResult = function() {
