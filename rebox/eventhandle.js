@@ -185,7 +185,6 @@ function WinController(win) {
 
 function CreateWinController(win) {
     win.controller = new WinController(win);
+    win.controller.initGame();
     return win.controller;
 }
-
-CreateWinController(this);
