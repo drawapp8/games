@@ -1,7 +1,7 @@
 /***
 todo:
-0.看sublime能否提示来自其他js模块的自动完成
-1.add sound: 1) bkg 2)transform effect
+1.success/failed 过场动画
+2.add sound: 1) bkg 2)transform effect
 */
 
 
