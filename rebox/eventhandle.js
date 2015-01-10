@@ -128,9 +128,9 @@ function WinController(win) {
         }
                 
         if (playResult === RESULT_SUCCESS){
-            win.find('ResultSuccess').setVisible(true).animate("top-in");
+            win.find('ResultSuccess').setVisible(true).animate("bottom-in");
         } else {
-            win.find('ResultFailed').setVisible(true).animate("bottom-in");
+            win.find('ResultFailed').setVisible(true).animate("top-in");
         }
     };
     
