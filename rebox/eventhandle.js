@@ -1,7 +1,7 @@
 /***
 todo:
 1.success/failed 过场动画
-2.fix bug: 1) 背景音乐开关弄反了 
+2.fix bug: 背景音乐开关弄反了 
 3.改名 SoundTransform -> SoundEffect
 */
 
@@ -84,7 +84,7 @@ function WinController(win) {
     var playTransformAnimation = function(me) {
         console.log('playTransformAnimation()');
 
-        playEffectSound('SoundTransform');
+        playEffectSound('SoundEffect');
 
         var anim = win.find('TransformEffect');
         setPositionCenterToRef(me, anim);
@@ -181,16 +181,12 @@ function WinController(win) {
     };
 
     var playEffectSound = function(name){
-        var isEffectSoundOn = win.find('SoundEffect').getValue();
+        var isEffectSoundOn = win.find('SoundEffect').getValue(); //is switch on
         if (isEffectSoundOn){
             var snd = win.find(name);
             snd.stop();
             snd.play();
         }
-    };
-
-    var isEffectSoundOn = function(){
-        return win.find('SoundEffect').getValue();
     };
 
     this.onBeginContact = function(me, him) {
