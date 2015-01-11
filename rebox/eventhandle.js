@@ -82,7 +82,10 @@ function WinController(win) {
 
     var playTransformAnimation = function(me) {
         console.log('playTransformAnimation()');
-        win.find('SoundTransform').play();
+
+        var snd = win.find('SoundTransform');
+        snd.stop();
+        snd.play();
         
         var anim = win.find('TransformEffect');
         setPositionCenterToRef(me, anim);
@@ -176,6 +179,14 @@ function WinController(win) {
         
         if (someoneKicked)
             checkResult();
+    };
+
+    this.onBeginContact = function(me, him) {
+        if (findTransformClass(name2class(me.name), CLASSES_EVIL)){
+            var snd = win.find("SoundHit");
+            snd.stop();
+            snd.play();
+        }
     };
     
     this.onRestart = function() {
