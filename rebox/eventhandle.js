@@ -83,10 +83,8 @@ function WinController(win) {
     var playTransformAnimation = function(me) {
         console.log('playTransformAnimation()');
 
-        var snd = win.find('SoundTransform');
-        snd.stop();
-        snd.play();
-        
+        playEffectSound('SoundTransform');
+
         var anim = win.find('TransformEffect');
         setPositionCenterToRef(me, anim);
         anim.setVisible(true).play(null, 1, function(){
@@ -181,11 +179,22 @@ function WinController(win) {
             checkResult();
     };
 
-    this.onBeginContact = function(me, him) {
-        if (findTransformClass(name2class(me.name), CLASSES_EVIL)){
-            var snd = win.find("SoundHit");
+    var playEffectSound = function(name){
+        var isEffectSoundOn = win.find('SoundEffect').getValue();
+        if (isEffectSoundOn){
+            var snd = win.find(name);
             snd.stop();
             snd.play();
+        }
+    };
+
+    var isEffectSoundOn = function(){
+        return win.find('SoundEffect').getValue();
+    };
+
+    this.onBeginContact = function(me, him) {
+        if (findTransformClass(name2class(me.name), CLASSES_EVIL)){
+            playEffectSound("SoundHit");                        
         }
     };
     
