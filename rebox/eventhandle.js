@@ -1,7 +1,8 @@
 /***
 todo:
 1.success/failed 过场动画
-2.add sound: 1) bkg 2)transform effect
+2.fix bug: 1) 背景音乐开关弄反了 
+3.改名 SoundTransform -> SoundEffect
 */
 
 
