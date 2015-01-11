@@ -111,12 +111,8 @@ function WinController(win) {
         console.log('dest.pos=[' + destObj.x + ',' + destObj.y + ']'
             + ' dest.speed=[' + destV.x + ',' + destV.y + ']');
 
-        destObj.setPosition(me.x, me.y);        
-        me.setVisible(false);
-        me.body.SetActive(false);
-        destObj.setVisible(true);
-        destObj.body.SetActive(true);
-        destObj.setV(meV.x, meV.y);
+        me.setVisible(false).setEnable(false);
+        destObj.setPosition(me.x, me.y).setVisible(true).setEnable(true).setV(meV.x, meV.y);
     };
     
     var showResult = function(){
