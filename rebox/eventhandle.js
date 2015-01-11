@@ -82,6 +82,7 @@ function WinController(win) {
 
     var playTransformAnimation = function(me) {
         console.log('playTransformAnimation()');
+        win.find('SoundTransform').play();
         
         var anim = win.find('TransformEffect');
         setPositionCenterToRef(me, anim);
