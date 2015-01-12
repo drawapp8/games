@@ -24,6 +24,8 @@ function WinController(win) {
     var playResult = RESULT_NONE;
     
     this.initGame = function(evilCount) {
+        win.resetGame(); //恢复到初始状态
+
         playResult = RESULT_NONE;
         goodKickCount = 0;
         evilKickCount = 0;
