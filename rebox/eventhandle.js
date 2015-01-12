@@ -2,7 +2,6 @@
 todo:
 1.success/failed 过场动画
 2.fix bug: 背景音乐开关弄反了 
-3.改名 SoundTransform -> SoundEffect
 */
 
 
@@ -11,7 +10,8 @@ function WinController(win) {
         ["BoxYellowGood", "CircleYellowGood"]
     ];
     var CLASSES_EVIL = [
-        ["BoxRedEvil", "CircleRedEvil"]
+        ["BoxRedEvil", "CircleRedEvil"],
+        ["BoxRedEvil2", "BoxRedEvil2"]
     ];
     
     var RESULT_NONE = 0;
@@ -98,8 +98,7 @@ function WinController(win) {
         playTransformAnimation(me);
         
         var destName = findTransformName(me.name);
-        if (! destName){
-            console.log("find transform dest name failed!");
+        if (! destName || destName === me.name){            
             return;
         }
         console.log('destName = ' + destName);
