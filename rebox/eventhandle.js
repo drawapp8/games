@@ -18,9 +18,7 @@ function WinController(win, initData) {
     var RESULT_NONE = 0;
     var RESULT_SUCCESS = 1;
     var RESULT_FAILED = 2;    
-    var LEVEL_INDEX = getLevelIndexFromName();
-    var EVIL_NR = LEVELS_EVIL_COUNT[LEVEL_INDEX];
-    
+        
     var goodKickCount = 0;
     var evilKickCount = 0;
     var playResult = RESULT_NONE;
@@ -37,6 +35,9 @@ function WinController(win, initData) {
         console.log('getLevelIndexFromName() = ' + i);
         return i;
     };
+    
+    var EVIL_NR = LEVELS_EVIL_COUNT[LEVEL_INDEX];
+    var LEVEL_INDEX = getLevelIndexFromName();
         
     var name2class = function(name){
         for (var i = name.length - 1; i >= 0; i--){
