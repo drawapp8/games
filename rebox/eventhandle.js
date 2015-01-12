@@ -31,11 +31,11 @@ function WinController(win) {
         evilKickCount = 0;
     };
 
-    var getLevelIndexFromName = function () {
+    var getCurrentLevelIndex = function () {
         var str = getNameTail(win.name);
         var i = Number(str.slice(1, str.length));
-        console.log('getLevelIndexFromName() = ' + i);
-        return i;
+        console.log('getCurrentLevelIndex() = ' + i);
+        return i - 1;
     };      
         
     var name2class = function(name){
@@ -154,8 +154,8 @@ function WinController(win) {
             return;
         }
         
-        var levelIndex = getLevelIndexFromName();
-        if (evilKickCount < LEVELS_EVIL_COUNT[levelIndex - 1]) 
+        var levelIndex = getCurrentLevelIndex();
+        if (evilKickCount < LEVELS_EVIL_COUNT[levelIndex]) 
             return;
             
         var anim = win.find('Checking');
@@ -212,6 +212,11 @@ function WinController(win) {
     this.onRestart = function() {
         win.resetGame();
         win.controller.initGame();
+    };
+
+    this.onNextLevel = function() {
+        var nextLevelName = 'level-' + (getCurrentLevelIndex() + 1);
+        win.openWindow(nextLevelName, null, true);
     };
 }
 
