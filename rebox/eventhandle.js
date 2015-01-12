@@ -5,7 +5,7 @@ todo:
 */
 
 
-function WinController(win, initData) {
+function WinController(win) {
     var CLASSES_GOOD = [
         ["BoxYellowGood", "CircleYellowGood"]
     ];
@@ -34,10 +34,7 @@ function WinController(win, initData) {
         var i = Number(str.slice(1, str.length));
         console.log('getLevelIndexFromName() = ' + i);
         return i;
-    };
-    
-    var EVIL_NR = LEVELS_EVIL_COUNT[LEVEL_INDEX];
-    var LEVEL_INDEX = getLevelIndexFromName();
+    };      
         
     var name2class = function(name){
         for (var i = name.length - 1; i >= 0; i--){
@@ -155,7 +152,8 @@ function WinController(win, initData) {
             return;
         }
         
-        if (evilKickCount < EVIL_NR) 
+        var levelIndex = getLevelIndexFromName();
+        if (evilKickCount < LEVELS_EVIL_COUNT[levelIndex]) 
             return;
             
         var anim = win.find('Checking');
@@ -215,8 +213,8 @@ function WinController(win, initData) {
     };
 }
 
-function CreateWinController(win, initData) {
-    win.controller = new WinController(win, initData);
+function CreateWinController(win) {
+    win.controller = new WinController(win);
     win.controller.initGame();
     return win.controller;
 }
