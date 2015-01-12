@@ -215,7 +215,7 @@ function WinController(win) {
     };
 
     this.onNextLevel = function() {
-        var nextLevelName = 'level-' + (getCurrentLevelIndex() + 1);
+        var nextLevelName = 'level-' + (getCurrentLevelIndex() + 1 + 1);
         win.openWindow(nextLevelName, null, true);
     };
 }
