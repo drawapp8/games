@@ -5,7 +5,7 @@ todo:
 */
 
 
-function WinController(win) {
+function WinController(win, initData) {
     var CLASSES_GOOD = [
         ["BoxYellowGood", "CircleYellowGood"]
     ];
@@ -13,20 +13,29 @@ function WinController(win) {
         ["BoxRedEvil", "CircleRedEvil"],
         ["BoxRedEvil2", "BoxRedEvil2"]
     ];
+    var LEVELS_EVIL_COUNT = [2, 1, 1];
     
     var RESULT_NONE = 0;
     var RESULT_SUCCESS = 1;
-    var RESULT_FAILED = 2;
-    var EVIL_NR = 2;
+    var RESULT_FAILED = 2;    
+    var LEVEL_INDEX = getLevelIndexFromName();
+    var EVIL_NR = LEVELS_EVIL_COUNT[LEVEL_INDEX];
     
     var goodKickCount = 0;
     var evilKickCount = 0;
     var playResult = RESULT_NONE;
     
-    this.initGame = function() {
+    this.initGame = function(evilCount) {
         playResult = RESULT_NONE;
         goodKickCount = 0;
         evilKickCount = 0;
+    };
+
+    var getLevelIndexFromName = function () {
+        var str = getNameTail(win.name);
+        var i = Number(str.slice(1, str.length));
+        console.log('getLevelIndexFromName() = ' + i);
+        return i;
     };
         
     var name2class = function(name){
@@ -124,12 +133,16 @@ function WinController(win) {
             checkAnim.stop();
             checkAnim.setVisible(false);
         }
-                
+
         if (playResult === RESULT_SUCCESS){
             win.find('ResultSuccess').setVisible(true).animate("bottom-in");
         } else {
             win.find('ResultFailed').setVisible(true).animate("top-in");
         }
+    };
+
+    var setLevelPassed = function() {        
+        localStorage.setItem(win.name, true);
     };
     
     var checkResult = function() {
@@ -155,6 +168,7 @@ function WinController(win) {
                 playResult = RESULT_FAILED;
             } else {
                 playResult = RESULT_SUCCESS;
+                setLevelPassed();
             }
             showResult();
         });
@@ -200,8 +214,8 @@ function WinController(win) {
     };
 }
 
-function CreateWinController(win) {
-    win.controller = new WinController(win);
+function CreateWinController(win, initData) {
+    win.controller = new WinController(win, initData);
     win.controller.initGame();
     return win.controller;
 }
