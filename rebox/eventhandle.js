@@ -155,7 +155,7 @@ function WinController(win) {
         }
         
         var levelIndex = getLevelIndexFromName();
-        if (evilKickCount < LEVELS_EVIL_COUNT[levelIndex]) 
+        if (evilKickCount < LEVELS_EVIL_COUNT[levelIndex - 1]) 
             return;
             
         var anim = win.find('Checking');
