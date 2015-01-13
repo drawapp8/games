@@ -1,19 +1,18 @@
 /***
 todo:
-1.success/failed 过场动画
-2.fix bug: 背景音乐开关弄反了 
+1.fix bug: 背景音乐开关弄反了 
 */
-
 
 function WinController(win) {
     var CLASSES_GOOD = [
         ["BoxYellowGood", "CircleYellowGood"]
     ];
     var CLASSES_EVIL = [
-        ["BoxRedEvil", "CircleRedEvil"],
-        ["BoxRedEvil2", "BoxRedEvil2"]
+        ["BoxRedEvil",    "CircleRedEvil"],
+        ["BoxRedEvil2",   "BoxRedEvil2"],
+        ["BoxRedEvil3",   "CircleRedEvil3"]
     ];
-    var LEVELS_EVIL_COUNT = [2, 1, 1];
+    var LEVELS_EVIL_COUNT = [2,1,1,1,1,  1,2];
     
     var RESULT_NONE = 0;
     var RESULT_SUCCESS = 1;
