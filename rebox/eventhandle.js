@@ -92,7 +92,7 @@ function WinController(win) {
     var playTransformAnimation = function(me) {
         console.log('playTransformAnimation()');
 
-        playEffectSound('SoundEffect');
+        playEffectSound('transform1.mp3');
 
         var anim = win.find('TransformEffect');
         setPositionCenterToRef(me, anim);
@@ -134,8 +134,10 @@ function WinController(win) {
         }
 
         if (playResult === RESULT_SUCCESS){
+            playEffectSound("win_sound.mp3");
             win.find('ResultSuccess').setVisible(true).animate("bottom-in");
         } else {
+            playEffectSound("fail_sound.mp3");
             win.find('ResultFailed').setVisible(true).animate("top-in");
         }
     };
@@ -196,15 +198,14 @@ function WinController(win) {
     var playEffectSound = function(name){
         var isEffectSoundOn = win.find('SoundEffect').getValue(); //is switch on
         if (isEffectSoundOn){
-            var snd = win.find(name);
-            snd.stop();
+            var snd = win.find(name);            
             snd.play();
         }
     };
 
     this.onBeginContact = function(me, him) {
         if (findTransformClass(name2class(me.name), CLASSES_EVIL)){
-            playEffectSound("SoundHit");                        
+            playEffectSound("werebox_hit.mp3");
         }
     };
     
