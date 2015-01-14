@@ -196,10 +196,9 @@ function WinController(win) {
     };
 
     var playEffectSound = function(name){
-        var isEffectSoundOn = win.find('SoundEffect').getValue(); //is switch on
-        if (isEffectSoundOn){
-            var snd = win.find(name);            
-            snd.play();
+        var sndEffect = win.find('SoundEffect');
+        if (sndEffect.getValue()){
+            snd.playSoundEffect(name);
         }
     };
 
