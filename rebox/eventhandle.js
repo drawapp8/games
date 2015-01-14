@@ -198,7 +198,7 @@ function WinController(win) {
     var playEffectSound = function(name){
         var sndEffect = win.find('SoundEffect');
         if (sndEffect.getValue()){
-            snd.playSoundEffect(name);
+            sndEffect.playSoundEffect(name);
         }
     };
 
