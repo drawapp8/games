@@ -94,11 +94,13 @@ function WinController(win) {
 
         playEffectSound('transform1.mp3');
 
+        /*
         var anim = win.find('TransformEffect');
         setPositionCenterToRef(me, anim);
         anim.setVisible(true).play(null, 1, function(){
             anim.setVisible(false);
         });
+        */
     };
     
     this.doTransform = function(me) {
