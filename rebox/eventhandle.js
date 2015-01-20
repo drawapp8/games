@@ -1,6 +1,4 @@
 /***
-todo:
-1.fix bug: 背景音乐开关弄反了 
 */
 
 function WinController(win) {
@@ -126,6 +124,8 @@ function WinController(win) {
     };
     
     var showResult = function(){
+        win.stop();
+
         var checkAnim = win.find('Checking');
         
         if (checkAnim.isVisible()) { //checking中途good object掉落
@@ -209,7 +209,6 @@ function WinController(win) {
     };
     
     this.onRestart = function() {
-        win.resetGame();
         win.controller.initGame();
     };
 
