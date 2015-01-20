@@ -107,6 +107,8 @@ function WinController(win) {
     };
     
     this.doTransform = function(me) {
+        if (isStopClick) return;
+
         console.log('doTransform()');
         playTransformAnimation(me);
         
