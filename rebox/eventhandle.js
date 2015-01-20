@@ -19,10 +19,17 @@ function WinController(win) {
     var goodKickCount = 0;
     var evilKickCount = 0;
     var playResult = RESULT_NONE;
+    var isStopClick = false; // 是否还能再点击: checking中，不能再点击，但物理引擎仍工作(球仍在滚动)
+
+    var stopGame = function(){ //弹出结果提示框时调用：不能再点击，物理引擎也停止
+        win.stop();
+        isStopClick = true;
+    };
     
     this.initGame = function(evilCount) {
         win.resetGame(); //恢复到初始状态
 
+        isStopClick = false;
         playResult = RESULT_NONE;
         goodKickCount = 0;
         evilKickCount = 0;
@@ -122,9 +129,9 @@ function WinController(win) {
         me.setVisible(false).setEnable(false);
         destObj.setPosition(me.x, me.y).setVisible(true).setEnable(true).setV(meV.x, meV.y);
     };
-    
+
     var showResult = function(){
-        win.stop();
+        stopGame();
 
         var checkAnim = win.find('Checking');
         
@@ -174,6 +181,7 @@ function WinController(win) {
             }
             showResult();
         });
+        isStopClick = true;
     };
     
     this.onMoved = function(me) {
