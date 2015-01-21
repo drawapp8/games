@@ -3,7 +3,8 @@
 
 function WinController(win) {
     var CLASSES_GOOD = [
-        ["BoxYellowGood", "CircleYellowGood"]
+        ["BoxYellowGood", "CircleYellowGood"],
+        ["BoxGreenGood",  "CircleGreenGood"]
     ];
     var CLASSES_EVIL = [
         ["BoxRedEvil",    "CircleRedEvil"],
@@ -109,14 +110,14 @@ function WinController(win) {
     this.doTransform = function(me) {
         if (isStopClick) return;
 
-        console.log('doTransform()');
-        playTransformAnimation(me);
-        
         var destName = findTransformName(me.name);
         if (! destName || destName === me.name){            
             return;
-        }
+        }        
         console.log('destName = ' + destName);
+
+        console.log('doTransform()');
+        playTransformAnimation(me);
 
         var destObj = win.find(destName);
         var meV = me.body.GetLinearVelocity();
