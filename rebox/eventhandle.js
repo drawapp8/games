@@ -9,9 +9,10 @@ function WinController(win) {
         ["BoxBlueGood",  "CircleBlueGood"]
     ];
     var CLASSES_EVIL = [
-        ["BoxRedEvil",    "CircleRedEvil"],
-        ["BoxRedEvil2",   "BoxRedEvil2"],
-        ["BoxRedEvil3",   "CircleRedEvil3"]
+        ["BoxRedEvil",    "CircleRedEvil"],  //normal
+        ["BoxRedEvil2",   "BoxRedEvil2"],    //normal + no transorm
+        ["BoxRedEvil3",   "CircleRedEvil3"], //big
+        ["BoxRedEvilMini",   "CircleRedEvilMini"] //mini
     ];
     var LEVELS_EVIL_COUNT = [2,1,1,1,1,  1,2,2,1];
     
