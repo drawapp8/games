@@ -4,7 +4,8 @@
 function WinController(win) {
     var CLASSES_GOOD = [
         ["BoxYellowGood", "CircleYellowGood"],
-        ["BoxGreenGood",  "CircleGreenGood"]
+        ["BoxGreenGood",  "CircleGreenGood"],
+        ["BoxGreenGood2",  "CircleGreenGood2"]
     ];
     var CLASSES_EVIL = [
         ["BoxRedEvil",    "CircleRedEvil"],
