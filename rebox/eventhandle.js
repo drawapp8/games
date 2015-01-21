@@ -33,6 +33,9 @@ function WinController(win) {
     this.initGame = function(evilCount) {
         win.resetGame(); //恢复到初始状态
 
+        if (win.isPlaying() === false)
+            win.play();
+
         isStopClick = false;
         playResult = RESULT_NONE;
         goodKickCount = 0;
