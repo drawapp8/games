@@ -5,14 +5,15 @@ function WinController(win) {
     var CLASSES_GOOD = [
         ["BoxYellowGood", "CircleYellowGood"],
         ["BoxGreenGood",  "CircleGreenGood"],
-        ["BoxGreenGood2",  "CircleGreenGood2"]
+        ["BoxGreenGood2",  "CircleGreenGood2"],
+        ["BoxBlueGood",  "CircleBlueGood"]
     ];
     var CLASSES_EVIL = [
         ["BoxRedEvil",    "CircleRedEvil"],
         ["BoxRedEvil2",   "BoxRedEvil2"],
         ["BoxRedEvil3",   "CircleRedEvil3"]
     ];
-    var LEVELS_EVIL_COUNT = [2,1,1,1,1,  1,2];
+    var LEVELS_EVIL_COUNT = [2,1,1,1,1,  1,2,2,1];
     
     var RESULT_NONE = 0;
     var RESULT_SUCCESS = 1;
