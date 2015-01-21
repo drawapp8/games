@@ -14,7 +14,7 @@ function WinController(win) {
         ["BoxRedEvil3",   "CircleRedEvil3"], //big
         ["BoxRedEvilMini",   "CircleRedEvilMini"] //mini
     ];
-    var LEVELS_EVIL_COUNT = [2,1,1,1,1,  1,2,2,1];
+    var LEVELS_EVIL_COUNT = [2,1,1,1,1,  1,2,2,1,2];
     
     var RESULT_NONE = 0;
     var RESULT_SUCCESS = 1;
