@@ -243,21 +243,21 @@ function CreateWinController(win) {
 }
 
 function ComicWin(win, next_win_name) {
-    var is_ignored = false;
+    var is_jumped = false;
     
     this.init = function() {
-        is_ignored = false;
+        is_jumped = false;
     };
     
-    this.scenceOnClicked = function() {
-        if (is_ignored){
-            win.openWindow("intro1_2", null, true);
+    this.jump = function() {
+        if (is_jumped){
+            win.openWindow(next_win_name, null, true);
         } else {
             for(var i = 0; i < win.children.length; i++) {
                 var iter = win.children[i];
                 iter.setVisible(true);
             }
-            is_ignored = true;
+            is_jumped = true;
         }
     };
 }
