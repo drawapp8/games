@@ -124,8 +124,9 @@ function WinController(win) {
 
         var destObj = win.find(destName);
         var meV = me.body.GetLinearVelocity();
+        var meRotation = me.getRotation();
+
         var destV = destObj.body.GetLinearVelocity();
-        
         console.log('JustBeforeTransform');
         console.log('me.pos=[' + me.x + ',' + me.y + ']'
             + ' me.speed=[' + meV.x + ',' + meV.y + ']');
@@ -133,7 +134,7 @@ function WinController(win) {
             + ' dest.speed=[' + destV.x + ',' + destV.y + ']');
 
         me.setVisible(false).setEnable(false);
-        destObj.setPosition(me.x, me.y).setVisible(true).setEnable(true).setV(meV.x, meV.y);
+        destObj.setPosition(me.x, me.y).setVisible(true).setEnable(true).setV(meV.x, meV.y).setRotation(meRotation);
     };
 
     var showResult = function(){
