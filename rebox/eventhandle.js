@@ -241,3 +241,29 @@ function CreateWinController(win) {
     win.controller.initGame();
     return win.controller;
 }
+
+function ComicWin(win, next_win_name) {
+    var is_ignored = false;
+    
+    this.init = function() {
+        is_ignored = false;
+    };
+    
+    this.scenceOnClicked = function() {
+        if (is_ignored){
+            win.openWindow("intro1_2", null, true);
+        } else {
+            for(var i = 0; i < win.children.length; i++) {
+                var iter = win.children[i];
+                iter.setVisible(true);
+            }
+            is_ignored = true;
+        }
+    };
+}
+
+function CreateComicWin(win, next_win_name) {
+    win.comic = new ComicWin(win, next_win_name);
+    win.comic.init();
+    return win.comic;
+}
