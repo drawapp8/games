@@ -242,7 +242,7 @@ function CreateWinController(win) {
     return win.controller;
 }
 
-function ComicWin(win, next_win_name, grid_count) {
+function ComicWin(win, next_win_name) {
     var setAllGridVisible = function() {
         for(var i = 0; i < win.children.length; i++) {
             var iter = win.children[i];
@@ -259,7 +259,7 @@ function ComicWin(win, next_win_name, grid_count) {
             }
         }
 
-        return (visibleCount >= grid_count);
+        return (visibleCount >= win.children.length);
     };
     
     this.onClick = function() {
@@ -271,7 +271,7 @@ function ComicWin(win, next_win_name, grid_count) {
     };
 }
 
-function CreateComicWin(win, next_win_name, grid_count) {
-    win.comic = new ComicWin(win, next_win_name, grid_count);    
+function CreateComicWin(win, next_win_name) {
+    win.comic = new ComicWin(win, next_win_name);    
     return win.comic;
 }
