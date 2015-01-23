@@ -242,28 +242,36 @@ function CreateWinController(win) {
     return win.controller;
 }
 
-function ComicWin(win, next_win_name) {
-    var is_jumped = false;
-    
-    this.init = function() {
-        is_jumped = false;
+function ComicWin(win, next_win_name, grid_count) {
+    var setAllGridVisible = function() {
+        for(var i = 0; i < win.children.length; i++) {
+            var iter = win.children[i];
+            iter.setVisible(true);
+        }
+    };
+
+    var isAllGridVisible = function() {
+        var visibleCount = 0;
+        for(var i = 0; i < win.children.length; i++) {
+            var iter = win.children[i];
+            if (iter.isVisible()) {
+                visibleCount += 1;
+            }
+        }
+
+        return (visibleCount >= grid_count);
     };
     
-    this.jump = function() {
-        if (is_jumped){
+    this.onClick = function() {
+        if (isAllGridVisible()){
             win.openWindow(next_win_name, null, true);
         } else {
-            for(var i = 0; i < win.children.length; i++) {
-                var iter = win.children[i];
-                iter.setVisible(true);
-            }
-            is_jumped = true;
+            setAllGridVisible();            
         }
     };
 }
 
-function CreateComicWin(win, next_win_name) {
-    win.comic = new ComicWin(win, next_win_name);
-    win.comic.init();
+function CreateComicWin(win, next_win_name, grid_count) {
+    win.comic = new ComicWin(win, next_win_name, grid_count);    
     return win.comic;
 }
