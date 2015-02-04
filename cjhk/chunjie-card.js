@@ -385,9 +385,9 @@ function GreetingWinController(win) {
 
     this.onChoose = function() {        
         win.openWindow('greeting-list', function(retData){
-            var text = retData;
             console.log('greeting-list window retData = ' + retData);
-            win.find('ui-mledit', true).setText(text);
+            greeting.text = retData;            
+            win.find('ui-mledit', true).setText(greeting.text);
         }, false);
     };
 
