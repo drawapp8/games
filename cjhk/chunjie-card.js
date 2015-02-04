@@ -32,6 +32,7 @@ function EditorWinController(win) {
             serverId: ""            
         }
     };
+    var soundMusic = win.find('ui-sound-music');
 
     var setSoftkey = function(step) {
         console.log('setSoftkey()');
@@ -101,8 +102,10 @@ function EditorWinController(win) {
 
     var showContent = function() {
         console.log('showContent()');
-        if (win.find('ui-sound-music').getValue()){
-            win.find('ui-sound-music').play(MUSIC_LIST[editor.musicId]);
+
+        //restore music play
+        if (soundMusic.getValue() && ! win.getWindowManager().isSoundMusicPlaying()) {
+                soundMusic.play(MUSIC_LIST[editor.musicId]);
         }
         //win.find('ui-image-slide-view').setValue(editor.bkgId); //todo ?
 
@@ -185,7 +188,11 @@ function EditorWinController(win) {
                 editor.musicId += 1;
         }
         console.log("musicId = " + editor.musicId);
-        win.find('ui-sound-music').play(MUSIC_LIST[editor.musicId]);
+
+        if (soundMusic.getValue()) {
+            soundMusic.stop();
+            soundMusic.play(MUSIC_LIST[editor.musicId]);            
+        }        
     };
 
     this.onEditGreeting = function(button) {
