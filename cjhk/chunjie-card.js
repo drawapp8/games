@@ -228,7 +228,7 @@ function CreateEditorWinController(win) {
     return win.controller;
 }
 
-CreateEditorWinController(this, initData);
+CreateEditorWinController(this);
 
 /*
 greeting editor
