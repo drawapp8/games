@@ -94,7 +94,7 @@ function EditorWinController(win) {
         bkgSelector.setEnable(false);
         handAnim.setVisible(false);
         tipWinTitle.setVisible(true);
-        voiceButton.setVisible(true);
+        voiceButton.setVisible(false);
 
         if (step === STEP_SELECT_THEME){
             musicSelector.setVisible(true);
@@ -104,8 +104,7 @@ function EditorWinController(win) {
             manSelector.setVisible(true);
             manSelector.setPosition(manSelector.x, y);
         } else if (step === STEP_PREVIEW) {
-            tipWinTitle.setVisible(false);
-            voiceButton.setVisible(editor.greeting.voiceLocalId && editor.greeting.voiceServerId);            
+            tipWinTitle.setVisible(false);            
         } else {
             alert('error step');
         }
@@ -128,6 +127,13 @@ function EditorWinController(win) {
 
     var showContentForPreview = function() {
         console.log('showContentForPreview()');
+
+        //show greeting
+        var group = win.find('group-greeting');
+        if (editor.greeting.text) {
+            group.find('text').setText(editor.greeting.text);
+        }
+        group.find('voice').setVisible(editor.greeting.voiceLocalId && editor.greeting.voiceServerId);
 
         //restart music
         if (soundMusic.getValue()) {
