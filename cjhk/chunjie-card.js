@@ -113,6 +113,7 @@ function EditorWinController(win) {
     var showContentForEditor = function() {
         console.log('showContentForEditor()');
 
+        var group = win.find('group-greeting');    
         if (editor.greeting.text)
             group.find('text').setText(editor.greeting.text);
         else
@@ -173,9 +174,10 @@ function EditorWinController(win) {
     var randomNewCard = function(step) {
         console.log('randomNewCard()');
         editor.manId = 0;
-        editor.musicId = 0;
+        //editor.musicId = 0;
         editor.bkgId = 0;
-        //todo: restart music
+        
+        showContent();
     };
 
     var sendCard = function() {
@@ -196,6 +198,7 @@ function EditorWinController(win) {
             editor.step -= 1;
             setSoftkey(editor.step);
             setEditor(editor.step);
+            showContent();
         }
     };
 
@@ -206,6 +209,7 @@ function EditorWinController(win) {
             editor.step += 1;
             setSoftkey(editor.step);
             setEditor(editor.step);
+            showContent();
         }
     };
 
