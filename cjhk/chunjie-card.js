@@ -113,6 +113,11 @@ function EditorWinController(win) {
     var showContentForEditor = function() {
         console.log('showContentForEditor()');
 
+        if (editor.greeting.text)
+            group.find('text').setText(editor.greeting.text);
+        else
+            group.find('text').setText('点击输入祝福语');
+
         //restore music play
         if (soundMusic.getValue() && ! win.getWindowManager().isSoundMusicPlaying()) {
                 soundMusic.play(MUSIC_LIST[editor.musicId]);
@@ -129,10 +134,8 @@ function EditorWinController(win) {
         console.log('showContentForPreview()');
 
         //show greeting
-        var group = win.find('group-greeting');
-        if (editor.greeting.text) {
-            group.find('text').setText(editor.greeting.text);
-        }
+        var group = win.find('group-greeting');    
+        group.find('text').setText(editor.greeting.text);
         group.find('voice').setVisible(editor.greeting.voiceLocalId && editor.greeting.voiceServerId);
 
         //restart music
