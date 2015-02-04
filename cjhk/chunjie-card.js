@@ -85,8 +85,9 @@ function EditorWinController(win) {
         var manSelector = win.find('group-man-selector');
         var bkgSelector = win.find('ui-image-slide-view');
         var handAnim = win.find('hand-anim');
+        var downAnim = win.find('down-anim');
         var tipWinTitle = win.find('tip-win-title');
-        var voiceButton = win.find('group-greeting').find('voice');
+        var voiceButton = win.find('group-greeting').find('voice');        
         var y = musicSelector.y;
 
         musicSelector.setVisible(false);
@@ -95,6 +96,7 @@ function EditorWinController(win) {
         handAnim.setVisible(false);
         tipWinTitle.setVisible(true);
         voiceButton.setVisible(false);
+        downAnim.setVisible(false);
 
         if (step === STEP_SELECT_THEME){
             musicSelector.setVisible(true);
@@ -186,8 +188,19 @@ function EditorWinController(win) {
     var sendCard = function() {
         console.log('sendCard()');
     };
+
+    var getUrlParam = function(param) {
+        var reg = new RegExp("(^|&)" + param + "=([^&]*)(&|$)", "i");
+        var r = window.location.search.substr(1).match(reg);
+        if (r !== null)
+            return unescape(r[2]); 
+        else
+            return null;
+    };
     
     this.initWin = function() {
+        //zhuanfa url: ?mode=view&man=1&music=0&bkg=0&gvoice=[weixin://...]&gtext=[%3D%2E....]
+
         console.log('initWin()');
         setSoftkey(editor.step);
         setEditor(editor.step);
@@ -376,6 +389,10 @@ function GreetingWinController(win) {
             console.log('greeting-list window retData = ' + retData);
             win.find('ui-mledit', true).setText(text);
         }, false);
+    };
+
+    this.onOk = function() {
+        win.closeWindow(greeting);
     };
 }
 
