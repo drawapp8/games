@@ -206,9 +206,11 @@ function EditorWinController(win) {
     var sendCard = function() {
         console.log('sendCard()');
 
+        //todo: change to url base
         //generate url
         //url param: ?mode=view&man=1&music=0&bkg=0&gvoice=[weixin://...]&gtext=[%3D%2E....]
-        var url = '&view=1' + 
+        var url = 'http://osgames.duapp.com/apprun.html?appid=osgames1-461422965148421' + 
+                ' &view=1' + 
                 '&man=' + editor.manId + 
                 '&music=' + editor.musicId + 
                 '&bkg=' + editor.bkgId + 
