@@ -216,6 +216,9 @@ function EditorWinController(win) {
         if (soundMusic.getValue()) {            
             soundMusic.play(MUSIC_LIST[editor.musicId]);            
         }
+        if (editor.step === STEP_SELECT_THEME){
+            win.find('group-music-selector').setVisible(soundMusic.getValue());
+        }
     };
 }
 
