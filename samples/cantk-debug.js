@@ -1,7 +1,7 @@
 /*
- * File: trace.js
- * Author:  Li XianJing <xianjimli@hotmail.com>
- * Brief: portable log
+ * File: browser.js
+ * Author: Li XianJing <xianjimli@hotmail.com>
+ * Brief:  functions to detect browser type.
  * 
  * Copyright (c) 2011 - 2015  Li XianJing <xianjimli@hotmail.com>
  * 
@@ -9,24 +9,24 @@
 
 var browser = {    
   versions:function(){            
-  var u = navigator.userAgent, app = navigator.appVersion;            
-  return {                
-    ie9: u.indexOf('MSIE 9.0') > -1,
-    ie10: u.indexOf('MSIE 10.0') > -1,
-    ie: u.indexOf('MSIE') > -1 || u.indexOf('Trident') > -1,
-    oldIE: u.indexOf('MSIE 8.0') > -1||u.indexOf('MSIE 7.0') > -1 || u.indexOf('MSIE 6.0') > -1,
-    android: u.indexOf('Android') > -1 && u.indexOf('Linux') > -1, 
-    iPhone: u.indexOf('iPhone') > -1, 
-    iPad: u.indexOf('iPad') > -1, 
-    blackberry: u.indexOf('BlackBerry') > -1, 
-    firefoxMobile:u.indexOf('Mobile') > -1 && u.indexOf('Firefox') > -1,
-    firefoxOS:u.indexOf('Mobile') > -1 && u.indexOf('Firefox') > -1 && u.indexOf('Android') < 0,
-    windowPhone: u.indexOf('Windows Phone') > -1,
-    webkit: u.indexOf("WebKit") > -1,
-    weixin: u.indexOf("MicroMessenger") >= 0,
-    weibo: u.indexOf("weibo") >= 0,
-    qq: u.indexOf("QQ") >= 0
-  };
+    var u = navigator.userAgent, app = navigator.appVersion;            
+    return {                
+      ie9: u.indexOf('MSIE 9.0') >=0,
+      ie10: u.indexOf('MSIE 10.0') >=0,
+      ie: u.indexOf('MSIE') >=0 || u.indexOf('Trident') >=0,
+      oldIE: u.indexOf('MSIE 8.0') >=0||u.indexOf('MSIE 7.0') >=0 || u.indexOf('MSIE 6.0') >=0,
+      android: u.indexOf('Android') >=0 && u.indexOf('Linux') >=0, 
+      iPhone: u.indexOf('iPhone') >=0, 
+      iPad: u.indexOf('iPad') >=0, 
+      blackberry: u.indexOf('BlackBerry') >=0, 
+      firefoxMobile:u.indexOf('Mobile') >=0 && u.indexOf('Firefox') >=0,
+      firefoxOS:u.indexOf('Mobile') >=0 && u.indexOf('Firefox') >=0 && u.indexOf('Android') < 0,
+      windowPhone: u.indexOf('Windows Phone') >=0,
+      webkit: u.indexOf("WebKit") >=0,
+      weixin: u.indexOf("MicroMessenger") >= 0,
+      weibo: u.indexOf("weibo") >= 0,
+      qq: u.indexOf("QQ") >= 0
+    };
   }()
 } 
 
@@ -51,13 +51,6 @@ if(browser.versions.oldIE || browser.versions.ie9) {
   window.console.log = function(str) {};
 }
 
-var gForceMobile = false
-function setForceMobile(value) {
-  gForceMobile = value;
-
-  return;
-}
-
 function isOldIE() {
   return browser.versions.oldIE;
 }
@@ -71,7 +64,7 @@ if(browser.versions.oldIE) {
 }
 
 function isMobile() {
-  return gForceMobile || browser.versions.android 
+  return browser.versions.android 
     || browser.versions.iPhone 
     || browser.versions.blackberry
     || browser.versions.windowPhone
@@ -2237,9 +2230,9 @@ window.Modernizr = (function( window, document, undefined ) {
         // load the buffer from the URL
         var xhr = new XMLHttpRequest();
         var reqURL = url;
-        if(isWeiXin() && url.indexOf(location.host) < 0) {
-      reqURL = '/proxy.php?url=' + window.btoa(url) + '&mode=native&full_headers=1&send_cookies=1&send_session=0';
-      console.log(reqURL);
+        if(isWeiXin() && url.indexOf("http") === 0 && url.indexOf(window.location.hostname) < 0) {
+      reqURL = '/proxy.php?url=' + window.btoa(encodeURI(url)) + '&mode=native&full_headers=1&send_cookies=1&send_session=0';
+      console.log(url + "->" + reqURL);
         }
         xhr.open('GET', reqURL, true);
 
@@ -2403,8 +2396,8 @@ function cantkGetImageURL(name) {
 }
 
 
-var gBuildMonth = "15*12+01";
-var gBuildDate = "2015-01-28 18:21:45";
+var gBuildMonth = "15*12+02";
+var gBuildDate = "2015-02-02 16:11:22";
 
 /*
  * File: utils.js
@@ -3334,7 +3327,7 @@ function httpDoRequest(info) {
 
   //cross domain via proxy.
   if(!info.noProxy && url.indexOf("http") === 0 && url.indexOf(window.location.hostname) < 0) {
-    url = '/proxy.php?url=' + window.btoa(url) + '&mode=native&full_headers=1&send_cookies=1&send_session=0';
+    url = '/proxy.php?url=' + window.btoa(encodeURI(url)) + '&mode=native&full_headers=1&send_cookies=1&send_session=0';
 
     if(info.headers && info.headers["User-Agent"]) {
       var ua = info.headers["User-Agent"];
@@ -4194,6 +4187,8 @@ function canvasAttachManager(canvas, manager, app) {
     cantkAddEventListener('keydown', onKeyDown);
     
     function onWheelEvent(event) {
+      if(EditorElement.imeOpen) return true;
+
       event = window.event || event ;
       var delta = event.wheelDelta ? event.wheelDelta : 0;
       if(delta) {
@@ -4368,9 +4363,29 @@ function canvasAttachManager(canvas, manager, app) {
 /////////////////////////////////////////////////////////////// 
   var gViewPort = cantkGetViewPort();
   var gScreenHeight = screen.height;
+
+  function handleInputMethodShow() {
+    console.log("input method show");
+  }
+
+  function handleInputMethodHide() {
+    console.log("input method hide");
+  }
+
   function handleScreenSizeChanged() {
     var vp = cantkGetViewPort();
      if(gViewPort.width != vp.width || gViewPort.height != vp.height) {
+        if(gViewPort.width === vp.width) {
+          if(gViewPort.height < vp.height) {
+            handleInputMethodHide();
+          }
+          else {
+            handleInputMethodShow();
+          }
+
+          return;
+        }
+
       app.onSizeChanged();
       gViewPort = vp;
      }
@@ -4998,9 +5013,9 @@ EditorElement.prototype.setScrollType = function(scrollType) {
 
 EditorElement.prototype.show = function() {
   this.isVisibile = true;
-  //this.element.style.display = 'none';
   this.element.style.visibility = 'visible';
   this.element.focus();
+  EditorElement.imeOpen = true;
 
   return;
 }
@@ -5013,10 +5028,11 @@ EditorElement.prototype.setInputType = function(type) {
 
 EditorElement.prototype.hide = function() {
   this.isVisibile = false;
-  //this.element.style.display = '';
   this.element.style.visibility = 'hidden';  
   this.element.blur();
   this.element.onchange = null;
+  EditorElement.imeOpen = false;
+  setElementPosition(UIElement.getMainCanvas(), 0, 0);
 
   if(this.onHide) {
     this.onHide();
@@ -5075,7 +5091,7 @@ EditorElement.prototype.setShape = function(shape) {
   return;
 }
 
-function createElement(element, id, x, y, w, h) {
+EditorElement.create = function(element, id, x, y, w, h) {
   var edit = new EditorElement();
 
   element.id = id;
@@ -5200,7 +5216,7 @@ function createSingleLineEdit(id, x, y, w, h) {
     document.body.appendChild(element);
   }
 
-  return createElement(element, id, x, y, w, h);
+  return EditorElement.create(element, id, x, y, w, h);
 }
 
 function createMultiLineEdit(id, x, y, w, h) {
@@ -5211,7 +5227,7 @@ function createMultiLineEdit(id, x, y, w, h) {
     document.body.appendChild(element);
   }
 
-  return createElement(element, id, x, y, w, h);
+  return EditorElement.create(element, id, x, y, w, h);
 }
 
 
@@ -7857,6 +7873,7 @@ WWindowManager.prototype.init = function(app, canvas) {
   this.eventLogging = false;
   this.pointerDownPoint = {x:0, y:0};
   this.lastPointerPoint = {x:0, y:0};
+  this.enablePaint = true;
 
   return this;
 }
@@ -8282,7 +8299,22 @@ WWindowManager.prototype.showFPS = function(maxFpsMode) {
   return this;
 }
 
+WWindowManager.prototype.getPaintEnable = function() {
+  return this.enablePaint;
+}
+
+WWindowManager.prototype.setPaintEnable = function(enablePaint) {
+  this.enablePaint = enablePaint;
+  console.log("setPaintEnable:" + enablePaint);
+
+  return this;
+}
+
 WWindowManager.prototype.postRedraw = function(rect) {
+  if(!this.enablePaint) {
+    return;
+  }
+
   this.requestCount++;
 
   var manager = this;
@@ -10853,14 +10885,22 @@ RShape.prototype.lockPosition = function(isPositionLocked) {
 }
 
 RShape.prototype.execMoveResize = function(x, y, w, h) {
-  if(MoveResizeCommand) {
+  if(window.MoveResizeCommand) {
     this.exec(new MoveResizeCommand(this, x, y, w, h)); 
   }
   else {
-    this.x = x;
-    this.y = y;
-    this.w = w;
-    this.h = h;
+    if(x || x === 0) {
+      this.x = x;
+    }
+    if(y || y === 0) {
+      this.y = y;
+    }
+    if(w || w === 0) {
+      this.w = w;
+    }
+    if(h || h === 0) {
+      this.h = h;
+    }
   }
 
   return;
@@ -14699,8 +14739,10 @@ UIElement.prototype.postRedraw = function() {
     }
   }
 
-  return;
+  return this;
 }
+
+UIElement.prototype.requestRedraw = UIElement.prototype.postRedraw; 
 
 UIElement.prototype.setMode = function(mode, recursive) {
   this.mode = mode;
@@ -14929,7 +14971,11 @@ UIElement.prototype.setTarget = function(shape) {
   this.selected = !shape;
   this.onSelectChanged();
 
-  return;
+  return this;
+}
+
+UIElement.prototype.getTarget = function() {
+  return this.targetShape;
 }
 
 UIElement.prototype.initContainerShape = function(type) {
@@ -17429,7 +17475,7 @@ UIElement.prototype.setImage = function(type, src) {
 
   this.images[type] = image;
 
-  return;
+  return this;
 }
 
 UIElement.prototype.getHtmlImageByType = function(type) {
@@ -17472,7 +17518,7 @@ UIElement.prototype.addEventNames = function(eventNames) {
     }
   }
 
-  return;
+  return this;
 }
 
 UIElement.prototype.removeEventNames = function(eventNames) {
@@ -17483,7 +17529,7 @@ UIElement.prototype.removeEventNames = function(eventNames) {
     }
   }
 
-  return;
+  return this;
 }
 
 UIElement.prototype.getEventNames = function() {
@@ -17563,7 +17609,7 @@ UIElement.prototype.updateLayoutParams = function() {
     this.heightParam = this.h/this.w;
   }
 
-  return;
+  return this;
 }
 
 UIElement.prototype.imagesToJson = function(o) {
@@ -17698,12 +17744,6 @@ UIElement.prototype.isVisible = function() {
   return true;
 }
 
-UIElement.prototype.hide = function() {
-  this.visible = false;
-
-  return;
-}
-
 UIElement.prototype.onShowHTML = function() {
 
   return;
@@ -17775,7 +17815,7 @@ UIElement.prototype.getPrevSibling = function() {
 UIElement.prototype.setAutoScaleFontSize = function(value) {
   this.enableAutoScaleFontSize = value;
 
-  return;
+  return this;
 }
 
 UIElement.prototype.autoScaleFontSize = function(scale) {
@@ -18475,57 +18515,35 @@ UIElement.prototype.animHide = function(animHint, onAnimDone) {
   return;
 }
 
-UIElement.prototype.atLeft = function() {
-  this.exec(new PositionSizeAttrCommand(this, UIElement.X_LEFT_IN_PARENT, null, null, null));
 
-  return;
+UIElement.prototype.getSavedState = function() {
+  return this.savedState ? this.savedState.json : null;
 }
 
-UIElement.prototype.atRight = function() {
-  this.exec(new PositionSizeAttrCommand(this, UIElement.X_RIGHT_IN_PARENT, null, null, null));
-
-  return;
-}
-
-UIElement.prototype.atTop = function() {
-  this.exec(new PositionSizeAttrCommand(this, null, UIElement.Y_TOP_IN_PARENT, null, null));
-  
-  return;
-}
-
-UIElement.prototype.atBottom = function() {
-  this.exec(new PositionSizeAttrCommand(this, null, UIElement.Y_BOTTOM_IN_PARENT, null, null));
-  
-  return;
-}
-
-UIElement.prototype.atCenter = function() {
-  this.exec(new PositionSizeAttrCommand(this, UIElement.X_CENTER_IN_PARENT, null, null, null));
-  
-  return;
-}
-
-UIElement.prototype.atMiddle = function() {
-  this.exec(new PositionSizeAttrCommand(this, null, UIElement.Y_MIDDLE_IN_PARENT, null, null));
-  
-  return;
-}
-
-
-UIElement.prototype.saveState = function() {
+UIElement.prototype.saveState = function(json) {
   this.savedState = {};
-  this.savedState.json = this.toJson();
   
-  return;
+  UIElement.disableGetRelativePathOfURL = true;
+  this.savedState.json = json ? json : this.toJson();
+  UIElement.disableGetRelativePathOfURL = false;
+  
+  return this;
 }
 
 UIElement.prototype.restoreState = function() {
   if(this.savedState && this.savedState.json) {
     this.fromJson(this.savedState.json);
+  }
+
+  return this;
+}
+
+UIElement.prototype.clearState = function(clear) {
+  if(this.savedState) {
     this.savedState.json = null;
   }
 
-  return;
+  return this;
 }
 
 UIElement.prototype.isUserMovable = function() {
@@ -18701,12 +18719,16 @@ UIElement.setTimeout = function(func, deltaTime) {
   return;
 }
 
+UIElement.getMainCanvas = function() {
+  return document.getElementById("main_canvas");
+}
+
 UIElement.getMainCanvasScale = function(force) {
   if(!UIElement.canvasScale || force) {
     var xScale = 1;
     var yScale = 1;
     UIElement.canvasScale = {};
-    var mainCanvas = document.getElementById("main_canvas");
+    var mainCanvas = UIElement.getMainCanvas();
     
     if(mainCanvas.style.width && mainCanvas.style.height) {
       xScale = mainCanvas.width/parseFloat(mainCanvas.style.width);
@@ -20097,6 +20119,64 @@ UIList.prototype.onKeyUpRunning = function(code) {
 }
 
 UIList.prototype.onKeyDownRunning = function(code) {
+}
+
+UIList.prototype.getValue = function() {
+  var ret = null;
+  var n = this.children.length;
+  if(n < 1) return ret;
+  
+  for(var i = 0; i < n; i++) {
+    var iter = this.children[i];
+    if(!iter.isUIListCheckableItem || !iter.value) continue;
+
+    if(iter.isRadio) {
+      return i; 
+    }
+    else {
+      if(!ret) ret = [];
+      ret.push(i);
+    }
+  }
+
+  if(!ret && this.targetShape) {
+    ret = this.targetShape.getZIndex();
+  }
+
+  return ret;
+}
+
+UIList.prototype.setValue = function(value) {
+  var arr = null;
+  if(typeof value === "array") {
+    arr = value;
+  }
+  else if(typeof value === "number") {
+    arr = [value];
+  }
+  else {
+    arr = [];
+  }
+
+  var n = this.children.length;
+  for(var i = 0; i < n; i++) {
+    var item = this.children[i];
+    if(item.isUIListCheckableItem) {
+      item.setValue(false);
+    }
+  }
+
+  for(var i = 0; i < arr.length; i++) {
+    var index = arr[i];
+    if(index >= 0 && index < n) {
+      var item = this.children[index];
+      if(item.isUIListCheckableItem) {
+        item.setChecked(true);
+      }
+    }
+  }
+
+  return this;
 }
 
 function UIListCreator(border, itemHeight, bg) {
@@ -21651,8 +21731,9 @@ UICheckBox.prototype.paintSelfOnly = function(canvas) {
         this.drawImageAt(canvas, htmlImage, UIElement.IMAGE_DISPLAY_AUTO_SIZE_DOWN, x, y, w, h, srcRect);
 
         y = this.h >> 1;
-        x = x + w + 4;
-        canvas.textAlign = "left";
+        x = this.w - border;
+        this.hTextAlign = "right";
+        canvas.textAlign = "right";
         canvas.fillText(text, x, y);
         break;
       }
@@ -21665,6 +21746,7 @@ UICheckBox.prototype.paintSelfOnly = function(canvas) {
         this.drawImageAt(canvas, htmlImage, UIElement.IMAGE_DISPLAY_AUTO_SIZE_DOWN, x, y, w, h, srcRect);
         y = this.h >> 1;
         x = border;
+        this.hTextAlign = "left";
         canvas.textAlign = "left";
         canvas.fillText(text, x, y);
       }
@@ -21674,9 +21756,19 @@ UICheckBox.prototype.paintSelfOnly = function(canvas) {
     this.drawImageAt(canvas, htmlImage, UIElement.IMAGE_DISPLAY_AUTO_SIZE_DOWN, 0, 0, this.w, this.h, srcRect);
   }
   else if(text) {
-    var x = border;
     var y = this.h >> 1;
-    canvas.textAlign = "left";
+    if(this.hTextAlign === "center") {
+      var x = this.w >> 1;
+      canvas.textAlign = "center";
+    }
+    else if(this.hTextAlign === 'right') {
+      var x = this.w - border;
+      canvas.textAlign = "right";
+    }
+    else {
+      var x = border;
+      canvas.textAlign = "left";
+    }
     canvas.fillText(text, x, y);
   }
 
@@ -22750,6 +22842,9 @@ UIDevice.prototype.enterPreview = function(previewCurrentWindow) {
   if(previewCurrentWindow) {
     windowManager.setInitWindow(windowManager.getCurrent());
   }
+  else {
+    windowManager.setInitWindow(0);
+  }
 
   return;
 }
@@ -22778,6 +22873,7 @@ UIDevice.prototype.exitPreview = function() {
   this.setMode(Shape.MODE_EDITING);
   screen.setMode(Shape.MODE_EDITING, true);
   windowManager.restoreState();
+  windowManager.clearState();
   this.setSelected(true);
 
   return;
@@ -25067,7 +25163,11 @@ UIImage.prototype.setImageSrcRect = function(x, y, w, h) {
 UIImage.prototype.setValue = function(value) {
   this.setImage(UIElement.IMAGE_DEFAULT, value);
 
-  return;
+  return this;
+}
+
+UIImage.prototype.getValue = function() {
+  return this.getImageSrc();
 }
 
 UIImage.prototype.setImageSrc = function(value) {
@@ -26432,7 +26532,8 @@ UIImageThumbView.prototype.initUIImageThumbView = function(w, h) {
   imageThumbViewInitCustomProp(this);
   this.errorImage = UIImageView.createImage("drawapp8/images/common/failed.png", null);
   this.loadingImage = UIImageView.createImage("drawapp8/images/common/loading.png", null);
-  
+  this.addEventNames(["onChanged"]);
+
   return this;
 }
 
@@ -26637,6 +26738,7 @@ UIImageThumbViewTape.prototype.onClick = function(point, beforeChild) {
   }
   
   this.callOnClickHandler(point);
+  this.callOnChangedHandler(this.getCurrentImageSrc());
 
   return;
 }
@@ -27601,6 +27703,8 @@ UIListView.prototype.afterChildAppended = UIList.prototype.afterChildAppended;
 UIListView.prototype.childIsBuiltin = UIList.prototype.childIsBuiltin;
 UIListView.prototype.onKeyUpRunning = UIList.prototype.onKeyUpRunning;
 UIListView.prototype.onKeyDownRunning = UIList.prototype.onKeyDownRunning;
+UIListView.prototype.getValue = UIList.prototype.getValue;
+UIListView.prototype.setValue = UIList.prototype.setValue;
 
 UIListView.UPDATE_STATUS_NONE = 0;
 UIListView.UPDATE_STATUS_TIPS = 1;
@@ -30431,7 +30535,7 @@ UISimpleHTML.prototype.extractHtmlElements = function(el, indexInParent) {
     color = el.style.color;
   }
 
-  if(el.getAttribute) {
+  if(!color && el.getAttribute) {
     color = el.getAttribute("color");
   }
 
@@ -35232,6 +35336,7 @@ function Animation(showWin) {
     animation.isFirstStep = true;
 
     this.beforeRun();
+    WWindowManager.getInstance().setPaintEnable(false);
 
     function animStep() {
       var percent = 0;
@@ -35246,6 +35351,7 @@ function Animation(showWin) {
       else {
         animation.cleanup();
         animation.afterRun();
+        WWindowManager.getInstance().setPaintEnable(true);
         console.log("Animation done.");
       }
       animation.isFirstStep = false;
@@ -35327,6 +35433,20 @@ function scaleElement(element, scale, opacity, xOrigin, yOrigin) {
     element.style[trans] = "scale("+scale+")";
   }
   element.style["opacity"] = opacity;
+
+  return;
+}
+
+function rotateElement(element, deg) {
+  var origin = "50% 50%";
+  var transforms = ["transform", "-ms-transform", "-webkit-transform", "-o-transform", "-moz-transform"];
+
+  element.style['transform-style'] = "preserve-3d";
+  for(var i = 0; i < transforms.length; i++) {
+    var trans = transforms[i];
+    element.style[trans + "-origin"] = origin;
+    element.style[trans] = "rotate("+deg+"deg)";
+  }
 
   return;
 }
@@ -36402,1053 +36522,6 @@ function UIUnkownCreator() {
   return;
 }
 
-
-/*
- * File: ui-call-events-handler.js
- * Author:  Li XianJing <xianjimli@hotmail.com>
- * Brief: call events handler 
- * 
- * Copyright (c) 2011 - 2015  Li XianJing <xianjimli@hotmail.com>
- * 
- */
-
-///////////////////////////////////////////////////////////////
-UIElement.prototype.callOnUpdateTransformHandler = function() {
-  if(!this.handleOnUpdateTransform) {
-    var sourceCode = this.events["onUpdateTransform"];
-    if(sourceCode) {
-      sourceCode = "this.handleOnUpdateTransform = function() {\n" + sourceCode + "\n}\n";
-      try {
-        eval(sourceCode);
-      }catch(e) {
-        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
-      }
-    }
-  }
-
-  if(this.handleOnUpdateTransform) {
-    try {
-      this.handleOnUpdateTransform();
-    }catch(e) {
-      console.log("this.handleOnUpdateTransform:" + e.message);
-    }
-  }
-
-  return;
-}
-
-UIElement.prototype.callOnPointerDownHandler = function(point) {
-  if(!this.enable) {
-    return false;
-  }
-
-  if(!this.handlePointerDown) {
-    var sourceCode = this.events["onPointerDown"];
-    if(sourceCode) {
-      sourceCode = "this.handlePointerDown = function(point) {\n" + sourceCode + "\n}\n";
-      try {
-        eval(sourceCode);
-      }catch(e) {
-        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
-      }
-    }
-  }
-
-  if(this.handlePointerDown) {
-    try {
-      this.handlePointerDown(point);
-    }catch(e) {
-      console.log("this.handlePointerDown:" + e.message);
-    }
-  }
-
-  return true;
-}
-
-UIElement.prototype.callOnPointerMoveHandler = function(point) {
-  if(!this.enable) {
-    return false;
-  }
-
-  if(!this.handlePointerMove) {
-    var sourceCode = this.events["onPointerMove"];
-    if(sourceCode) {
-      sourceCode = "this.handlePointerMove = function(point) {\n" + sourceCode + "\n}\n";
-      try {
-        eval(sourceCode);
-      }catch(e) {
-        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
-      }
-    }
-  }
-
-  if(this.handlePointerMove) {
-    try {
-      this.handlePointerMove(point);
-    }catch(e) {
-      console.log("this.handlePointerMove:" + e.message);
-    }
-  }
-
-  return true;
-}
-
-UIElement.prototype.callOnPointerUpHandler = function(point) {
-  if(!this.enable) {
-    return false;
-  }
-
-  if(!this.handlePointerUp) {
-    var sourceCode = this.events["onPointerUp"];
-    if(sourceCode) {
-      sourceCode = "this.handlePointerUp = function(point) {\n" + sourceCode + "\n}\n";
-      try {
-        eval(sourceCode);
-      }catch(e) {
-        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
-      }
-    }
-  }
-
-  if(this.handlePointerUp) {
-    try{
-      this.handlePointerUp(point);
-    }catch(e) {
-      console.log("this.handlePointerUp:" + e.message);
-    }
-  }
-  
-  return true;
-}
-
-UIElement.prototype.callOnLongPressHandler = function(point) {
-  if(!this.enable) {
-    return false;
-  }
-
-  if(!this.handleLongPress) {
-    var sourceCode = this.events["onLongPress"];
-    if(sourceCode) {
-      sourceCode = "this.handleLongPress = function(point) {\n" + sourceCode + "\n}\n";
-      try {
-        eval(sourceCode);
-      }catch(e) {
-        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
-      }
-    }
-  }
-
-  if(this.handleLongPress) {
-    try {
-      this.handleLongPress(point);
-    }catch(e) {
-      console.log("this.handleLongPress:" + e.message);
-    }
-  }
-
-  return true;
-}
-
-UIElement.prototype.callOnDoubleClickHandler = function(point) {
-  if(this.mode === Shape.MODE_EDITING) {
-    if(this.textType != Shape.TEXT_NONE) {
-      this.editText(point);
-    }
-    else {
-      this.showProperty();
-    }
-
-    return true;
-  }
-  
-  if(!this.enable) {
-    return false;
-  }
-
-  if(!this.handleDoubleClick) {
-    var sourceCode = this.events["onDoubleClick"];
-    if(sourceCode) {
-      sourceCode = "this.handleDoubleClick = function(point) {\n" + sourceCode + "\n}\n";
-      try {
-        eval(sourceCode);
-      }catch(e) {
-        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
-      }
-    }
-  }
-
-  if(this.handleDoubleClick) {
-    try {
-      this.handleDoubleClick(point);
-    }catch(e) {
-      console.log("this.handleDoubleClick:" + e.message);
-    }
-  }
-
-  this.hitTestResult = 0;
-
-  return true;
-}
-
-UIElement.prototype.callOnPaintHandler = function(canvas2dCtx) {
-  if(this.mode === Shape.MODE_EDITING) {
-    return true;
-  }
-  
-  if(!this.enable) {
-    return false;
-  }
-
-  if(!this.handlePaint) {
-    var sourceCode = this.events["onPaint"];
-    if(sourceCode) {
-      sourceCode = "this.handlePaint = function(canvas2dCtx) {\n" + sourceCode + "\n}\n";
-      try {
-        eval(sourceCode);
-      }catch(e) {
-        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
-      }
-    }
-  }
-
-  if(this.handlePaint) {
-    try {
-      this.handlePaint(canvas2dCtx);
-    }catch(e) {
-      console.log("this.handlePaint:" + e.message);
-    }
-  }
-
-  return true;
-}
-
-UIElement.prototype.callOnClickHandler = function(point) {
-  if(!this.enable) {
-    return false;
-  }
-
-  if(this.mode === Shape.MODE_EDITING) {
-    return false;
-  }
-  
-  if(this.onClicked) {
-    this.onClicked(point);
-  }
-
-  if(!this.handleClick) {
-    var sourceCode = this.events["onClick"];
-    if(sourceCode) {
-      sourceCode = "this.handleClick = function(point) {\n" + sourceCode + "\n}\n";
-      try {
-        eval(sourceCode);
-      }catch(e) {
-        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
-      }
-    }
-  }
-
-  if(!this.children.length) {
-    console.log("clicked: " + this.type + "(" + this.name + ")");
-  }
-
-  if(this.handleClick) {
-    try {
-      this.handleClick(point);
-    }catch(e) {
-      console.log("this.handleClick:" + e.message);
-    }
-  }
-
-  return;
-}
-
-UIElement.prototype.callOnScrollDoneHandler = function() {
-  if(!this.enable) {
-    return false;
-  }
-
-  if(!this.handleOnScrollDone) {
-    var sourceCode = this.events["onScrollDone"];
-    if(sourceCode) {
-      sourceCode = "this.handleOnScrollDone = function() {\n" + sourceCode + "\n}\n";
-      try {
-        eval(sourceCode);
-      }catch(e) {
-        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
-      }
-    }
-  }
-
-  if(this.handleOnScrollDone) {
-    try {
-      this.handleOnScrollDone();
-    }catch(e) {
-      console.log("this.handleOnScrollDone:" + e.message);
-    }
-  }
-
-  return true;
-}
-
-UIElement.prototype.callOnRemovedHandler = function() {
-  if(!this.enable) {
-    return false;
-  }
-
-  if(!this.handleOnRemoved) {
-    var sourceCode = this.events["onRemoved"];
-    if(sourceCode) {
-      sourceCode = "this.handleOnRemoved = function() {\n" + sourceCode + "\n}\n";
-      try {
-        eval(sourceCode);
-      }catch(e) {
-        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
-      }
-    }
-  }
-
-  if(this.handleOnRemoved) {
-    try {
-      this.handleOnRemoved();
-    }catch(e) {
-      console.log("this.handleOnRemoved:" + e.message);
-    }
-  }
-
-  return true;
-}
-
-UIElement.prototype.callOnChildDraggingHandler = function(sourceChildIndex, targetChildIndex) {
-  if(!this.enable) {
-    return false;
-  }
-
-  if(!this.handleOnChildDragging) {
-    var sourceCode = this.events["onChildDragging"];
-    if(sourceCode) {
-      sourceCode = "this.handleOnChildDragging = function(sourceChildIndex, targetChildIndex) {\n" + sourceCode + "\n}\n";
-      try {
-        eval(sourceCode);
-      }catch(e) {
-        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
-      }
-    }
-  }
-
-  if(this.handleOnChildDragging) {
-    try {
-      this.handleOnChildDragging(sourceChildIndex, targetChildIndex);
-    }catch(e) {
-      console.log("this.handleOnChildDragging:" + e.message);
-    }
-  }
-
-  return true;
-}
-
-UIElement.prototype.callOnChildDraggedHandler = function(sourceChildIndex, targetChildIndex) {
-  if(!this.enable) {
-    return false;
-  }
-
-  if(!this.handleOnChildDragged) {
-    var sourceCode = this.events["onChildDragged"];
-    if(sourceCode) {
-      sourceCode = "this.handleOnChildDragged = function(sourceChildIndex, targetChildIndex) {\n" + sourceCode + "\n}\n";
-      try {
-        eval(sourceCode);
-      }catch(e) {
-        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
-      }
-    }
-  }
-
-  if(this.handleOnChildDragged) {
-    try {
-      this.handleOnChildDragged(sourceChildIndex, targetChildIndex);
-    }catch(e) {
-      console.log("this.handleOnChildDragged:" + e.message);
-    }
-  }
-
-  return true;
-}
-
-UIElement.prototype.callOnChangingHandler = function(value) {
-  if(!this.enable) {
-    return false;
-  }
-
-  if(!this.handleOnChanging) {
-    var sourceCode = this.events["onChanging"];
-    if(sourceCode) {
-      sourceCode = "this.handleOnChanging = function(value) {\n" + sourceCode + "\n}\n";
-      try {
-        eval(sourceCode);
-      }catch(e) {
-        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
-      }
-    }
-  }
-
-  if(this.handleOnChanging) {
-    try {
-      this.handleOnChanging(value);
-    }catch(e) {
-      console.log("this.handleOnChanging:" + e.message);
-    }
-  }
-
-  return true;
-}
-
-UIElement.prototype.callOnChangedHandler = function(value) {
-  if(!this.enable) {
-    return false;
-  }
-
-  if(this.onChanged) {
-    this.onChanged(value);
-
-    return;
-  }
-
-  if(!this.handleOnChanged) {
-    var sourceCode = this.events["onChanged"];
-    if(sourceCode) {
-      sourceCode = "this.handleOnChanged = function(value) {\n" + sourceCode + "\n}\n";
-      try {
-        eval(sourceCode);
-      }catch(e) {
-        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
-      }
-    }
-  }
-
-  if(this.handleOnChanged) {
-    try {
-      this.handleOnChanged(value);
-    }catch(e) {
-      console.log("this.handleOnChanged:" + e.message);
-    }
-  }
-
-  return true;
-}
-
-UIElement.prototype.callOnInitHandler = function() {
-  if(!this.handleOnInit) {
-    var sourceCode = this.events["onInit"];
-    if(sourceCode) {
-      sourceCode = "this.handleOnInit = function() {\n" + sourceCode + "\n}\n";
-      try {
-        eval(sourceCode);
-      }catch(e) {
-        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
-      }
-    }
-  }
-
-  if(this.handleOnInit) {
-    try {
-      this.handleOnInit();
-    }catch(e) {
-      console.log("this.handleOnInit:" + e.message);
-    }
-  }
-
-  return true;
-}
-
-UIElement.prototype.callOnFocusInHandler = function() {
-  if(this.onFocusIn) {
-    try {
-      this.onFocusIn();
-    }
-    catch(e) {
-      console.log("onFocusIn:" + e.message);
-    }
-  }
-
-  if(!this.handleOnFocusIn) {
-    var sourceCode = this.events["onFocusIn"];
-    if(sourceCode) {
-      sourceCode = "this.handleOnFocusIn = function() {\n" + sourceCode + "\n}\n";
-      try {
-        eval(sourceCode);
-      }catch(e) {
-        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
-      }
-    }
-  }
-
-  if(this.handleOnFocusIn) {
-    try {
-      this.handleOnFocusIn();
-    }catch(e) {
-      console.log("this.handleOnFocusIn:" + e.message);
-    }
-  }
-
-  return true;
-}
-
-UIElement.prototype.callOnFocusOutHandler = function() {
-  if(this.onFocusOut) {
-    try {
-      this.onFocusOut();
-    }
-    catch(e) {
-      console.log("onFocusOut: " + e.message);
-    }
-  }
-
-  if(!this.handleOnFocusOut) {
-    var sourceCode = this.events["onFocusOut"];
-    if(sourceCode) {
-      sourceCode = "this.handleOnFocusOut = function() {\n" + sourceCode + "\n}\n";
-      try {
-        eval(sourceCode);
-      }catch(e) {
-        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
-      }
-    }
-  }
-
-  if(this.handleOnFocusOut) {
-    try {
-      this.handleOnFocusOut();
-    }catch(e) {
-      console.log("this.handleOnFocusOut:" + e.message);
-    }
-  }
-
-  return true;
-}
-
-/////////////////////////////////////////////////////////
-
-UIListView.prototype.callOnUpdateDataHandler = function() {
-  if(!this.handleOnUpdateData) {
-    var sourceCode = this.events["onUpdateData"];
-    if(sourceCode) {
-      sourceCode = "this.handleOnUpdateData = function(value) {\n" + sourceCode + "\n}\n";
-      try {
-        eval(sourceCode);
-      }catch(e) {
-        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
-      }
-    }
-  }
-
-  if(this.handleOnUpdateData) {
-    try {
-      this.handleOnUpdateData();
-    }catch(e) {
-      console.log("this..handleOnUpdateData:" + e.message);
-    }
-  }
-
-  return true;
-}
-
-///////////////////////////////////////////////////////////////////
-
-UIWindow.prototype.callOnGestureHandler = function(gesture) {
-  if(!this.enable) {
-    return false;
-  }
-
-  if(!this.handleOnGesture) {
-    var sourceCode = this.events["onGesture"];
-    if(sourceCode) {
-      sourceCode = "this.handleOnGesture = function(gesture) {\n" + sourceCode + "\n}\n";
-      try {
-        eval(sourceCode);
-      }catch(e) {
-        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
-      }
-    }
-  }
-
-  if(this.handleOnGesture) {
-    try {
-      this.handleOnGesture(gesture);
-    }catch(e) {
-      console.log("this.callOnGestureHandler:" + e.message);
-    }
-  }
-  
-  console.log("callOnGestureHandler: scale=" + gesture.scale + " rotation=" + gesture.rotation);
-
-  return true;
-}
-
-UIWindow.prototype.callOnBeforeOpenHandler = function(initData) {
-  if(!this.handleOnBeforeOpen) {
-    var sourceCode = this.events["onBeforeOpen"];
-    if(sourceCode) {
-      sourceCode = "this.handleOnBeforeOpen = function(initData) {\n" + sourceCode + "\n}\n";
-      try {
-        eval(sourceCode);
-      }catch(e) {
-        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
-      }
-    }
-  }
-
-  if(this.handleOnBeforeOpen) {
-    try {
-      this.handleOnBeforeOpen(initData);
-    }catch(e) {
-      console.log("onBeforeOpen" + e.message);
-    }
-  }
-
-  return true;
-}
-
-UIWindow.prototype.callOnOpenHandler = function(initData) {
-  if(!this.handleOnOpen) {
-    var sourceCode = this.events["onOpen"];
-    if(sourceCode) {
-      sourceCode = "this.handleOnOpen = function(initData) {\n" + sourceCode + "\n}\n";
-      try {
-        eval(sourceCode);
-      }catch(e) {
-        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
-      }
-    }
-  }
-
-  if(this.handleOnOpen) {
-    try {
-      this.handleOnOpen(initData);  
-    }catch(e) {
-      console.log("onOpen" + e.message);
-    }
-  }
-
-  return true;
-}
-
-UIWindow.prototype.callOnCloseHandler = function(retInfo) {
-  if(!this.handleOnClose) {
-    var sourceCode = this.events["onClose"];
-    if(sourceCode) {
-      sourceCode = "this.handleOnClose = function(retInfo) {\n" + sourceCode + "\n}\n";
-      try {
-        eval(sourceCode);
-      }catch(e) {
-        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
-      }
-    }
-  }
-
-  if(this.handleOnClose) {
-    try {
-      this.handleOnClose(retInfo);
-    }
-    catch(e) {
-      console.log("onClose: " + e.message);
-    }
-  }
-
-  return true;
-}
-
-UIWindow.prototype.callOnSwitchToBackHandler =function() {
-  if(!this.handleOnSwitchToBack) {
-    var sourceCode = this.events["onSwitchToBack"];
-    if(sourceCode) {
-      sourceCode = "this.handleOnSwitchToBack = function() {\n" + sourceCode + "\n}\n";
-      try {
-        eval(sourceCode);
-      }catch(e) {
-        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
-      }
-    }
-  }
-
-  if(this.handleOnSwitchToBack) {
-    try {
-      this.handleOnSwitchToBack();
-    }
-    catch(e) {
-      console.log("OnSwitchToBack: " + e.message);
-    }
-  }
-
-  this.hide();
-
-  return true;
-}
-
-UIWindow.prototype.callOnSwitchToFrontHandler = function() {
-  if(!this.handleOnSwitchToFront) {
-    var sourceCode = this.events["onSwitchToFront"];
-    if(sourceCode) {
-      sourceCode = "this.handleOnSwitchToFront = function() {\n" + sourceCode + "\n}\n";
-      try {
-        eval(sourceCode);
-      }catch(e) {
-        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
-      }
-    }
-  }
-
-  if(this.handleOnSwitchToFront) {
-    try {
-      this.handleOnSwitchToFront();
-    }
-    catch(e) {
-      console.log("OnSwitchToFront: " + e.message);
-    }
-  }
-
-  return true;
-}
-
-UIWindow.prototype.callOnLoadHandler =function() {
-  if(!this.handleOnLoad) {
-    var sourceCode = this.events["onLoad"];
-    if(sourceCode) {
-      sourceCode = "this.handleOnLoad = function() {\n" + sourceCode + "\n}\n";
-      try {
-        eval(sourceCode);
-      }catch(e) {
-        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
-      }
-    }
-  }
-
-  if(this.handleOnLoad) {
-    try {
-      this.handleOnLoad();
-    }
-    catch(e) {
-      console.log("OnLoad: " + e.message);
-    }
-  }
-
-  return true;
-}
-
-UIWindow.prototype.callOnUnloadHandler =function() {
-  if(!this.handleOnUnload) {
-    var sourceCode = this.events["onUnload"];
-    if(sourceCode) {
-      sourceCode = "this.handleOnUnload = function() {\n" + sourceCode + "\n}\n";
-      try {
-        eval(sourceCode);
-      }catch(e) {
-        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
-      }
-    }
-  }
-
-  if(this.handleOnUnload) {
-    try {
-      this.handleOnUnload();
-    }
-    catch(e) {
-      console.log("OnUnload: " + e.message);
-    }
-  }
-
-  return true;
-}
-
-/////////////////////////////////////////////////////////////
-
-UIElement.prototype.callOnMovedHandler = function() {
-  if(!this.handleOnMoved) {
-    var sourceCode = this.events["onMoved"];
-    if(sourceCode) {
-      sourceCode = "this.handleOnMoved = function() {\n" + sourceCode + "\n}\n";
-      try {
-        eval(sourceCode);
-      }catch(e) {
-        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
-      }
-    }
-  }
-
-  if(this.handleOnMoved) {
-    try {
-      this.handleOnMoved();
-    }catch(e) {
-      console.log("this.handleOnMoved:" + e.message);
-    }
-  }
-
-  if(this.cameraFollowMe) {
-    if(!this.xOffsetInWin) {
-      this.xOffsetInWin = this.x;
-    }
-    if(!this.yOffsetInWin) {
-      this.yOffsetInWin = this.y;
-    }
-    var dx = this.x - this.xOffsetInWin;
-    var dy = this.y - this.yOffsetInWin;
-    this.getWindow().setOffset(dx, dy);
-  }
-
-  return true;
-}
-
-UIElement.prototype.callOnBeginContactHandler = function(body) {
-  if(this.onBeginContact) {
-    this.onBeginContact(body);
-
-    return;
-  }
-
-  if(!this.handleOnBeginContact) {
-    var sourceCode = this.events["onBeginContact"];
-    if(sourceCode) {
-      sourceCode = "this.handleOnBeginContact = function(body) {\n" + sourceCode + "\n}\n";
-      try {
-        eval(sourceCode);
-      }catch(e) {
-        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
-      }
-    }
-  }
-
-  if(this.handleOnBeginContact) {
-    try {
-      this.handleOnBeginContact(body);
-    }catch(e) {
-      console.log("this.handleOnBeginContact:" + e.message);
-    }
-  }
-
-  return true;
-}
-
-UIElement.prototype.callOnEndContactHandler = function(body) {
-  if(this.onEndContact) {
-    this.onEndContact(body);
-
-    return;
-  }
-
-  if(!this.handleOnEndContact) {
-    var sourceCode = this.events["onEndContact"];
-    if(sourceCode) {
-      sourceCode = "this.handleOnEndContact = function(body) {\n" + sourceCode + "\n}\n";
-      try {
-        eval(sourceCode);
-      }catch(e) {
-        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
-      }
-    }
-  }
-
-  if(this.handleOnEndContact) {
-    try {
-      this.handleOnEndContact(body);
-    }catch(e) {
-      console.log("this.handleOnEndContact:" + e.message);
-    }
-  }
-
-  return true;
-}
-
-UIElement.prototype.callOnAnimateDoneHandler = function(name) {
-  if(!this.handleOnAnimateDone) {
-    var sourceCode = this.events["onAnimateDone"];
-    if(sourceCode) {
-      sourceCode = "this.handleOnAnimateDone = function(name) {\n" + sourceCode + "\n}\n";
-      try {
-        eval(sourceCode);
-      }catch(e) {
-        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
-      }
-    }
-  }
-
-  if(this.handleOnAnimateDone) {
-    try {
-      this.handleOnAnimateDone(retInfo);
-    }
-    catch(e) {
-      console.log("onAnimateDone: " + e.message);
-    }
-  }
-
-  return true;
-}
-
-UIWindow.prototype.callOnSwipeLeftHandler = function() {
-  if(!this.handleOnSwipeLeft) {
-    var sourceCode = this.events["onSwipeLeft"];
-    if(sourceCode) {
-      sourceCode = "this.handleOnSwipeLeft = function() {\n" + sourceCode + "\n}\n";
-      try {
-        eval(sourceCode);
-      }catch(e) {
-        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
-      }
-    }
-  }
-
-  if(this.handleOnSwipeLeft) {
-    try {
-      this.handleOnSwipeLeft();
-    }catch(e) {
-      console.log("this.handleOnSwipeLeft:" + e.message);
-    }
-  }
-
-  return true;
-}
-
-UIWindow.prototype.callOnSwipeRightHandler = function() {
-  if(!this.handleOnSwipeRight) {
-    var sourceCode = this.events["onSwipeRight"];
-    if(sourceCode) {
-      sourceCode = "this.handleOnSwipeRight = function() {\n" + sourceCode + "\n}\n";
-      try {
-        eval(sourceCode);
-      }catch(e) {
-        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
-      }
-    }
-  }
-
-  if(this.handleOnSwipeRight) {
-    try {
-      this.handleOnSwipeRight();
-    }catch(e) {
-      console.log("this.handleOnSwipeRight:" + e.message);
-    }
-  }
-
-  return true;
-}
-
-UIWindow.prototype.callOnSwipeUpHandler = function() {
-  if(!this.handleOnSwipeUp) {
-    var sourceCode = this.events["onSwipeUp"];
-    if(sourceCode) {
-      sourceCode = "this.handleOnSwipeUp = function() {\n" + sourceCode + "\n}\n";
-      try {
-        eval(sourceCode);
-      }catch(e) {
-        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
-      }
-    }
-  }
-
-  if(this.handleOnSwipeUp) {
-    try {
-      this.handleOnSwipeUp();
-    }catch(e) {
-      console.log("this.handleOnSwipeUp:" + e.message);
-    }
-  }
-
-  return true;
-}
-
-UIWindow.prototype.callOnSwipeDownHandler = function() {
-  if(!this.handleOnSwipeDown) {
-    var sourceCode = this.events["onSwipeDown"];
-    if(sourceCode) {
-      sourceCode = "this.handleOnSwipeDown = function() {\n" + sourceCode + "\n}\n";
-      try {
-        eval(sourceCode);
-      }catch(e) {
-        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
-      }
-    }
-  }
-
-  if(this.handleOnSwipeDown) {
-    try {
-      this.handleOnSwipeDown();
-    }catch(e) {
-      console.log("this.handleOnSwipeDown:" + e.message);
-    }
-  }
-
-  return true;
-}
-
-UIStatus.prototype.callOnBecomeZeroHandler = function() {
-  if(!this.handleOnBecomeZero) {
-    var sourceCode = this.events["onBecomeZero"];
-    if(sourceCode) {
-      sourceCode = "this.handleOnBecomeZero = function() {\n" + sourceCode + "\n}\n";
-      try {
-        eval(sourceCode);
-      }catch(e) {
-        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
-      }
-    }
-  }
-
-  if(this.handleOnBecomeZero) {
-    try {
-      this.handleOnBecomeZero();
-    }catch(e) {
-      console.log("this.handleOnBecomeZero:" + e.message);
-    }
-  }
-
-  return true;
-}
-
-UIStatus.prototype.callOnBecomeFullHandler = function() {
-  if(!this.handleOnBecomeFull) {
-    var sourceCode = this.events["onBecomeFull"];
-    if(sourceCode) {
-      sourceCode = "this.handleOnBecomeFull = function() {\n" + sourceCode + "\n}\n";
-      try {
-        eval(sourceCode);
-      }catch(e) {
-        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
-      }
-    }
-  }
-
-  if(this.handleOnBecomeFull) {
-    try {
-      this.handleOnBecomeFull();
-    }catch(e) {
-      console.log("this.handleOnBecomeFull:" + e.message);
-    }
-  }
-
-  return true;
-}
-
-UITimer.prototype.callOnTimeoutHandler = function() {
-  if(!this.handleOnTimeout) {
-    var sourceCode = this.events["onTimeout"];
-    if(sourceCode) {
-      sourceCode = "this.handleOnTimeout = function() {\n" + sourceCode + "\n}\n";
-      try {
-        eval(sourceCode);
-      }catch(e) {
-        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
-      }
-    }
-  }
-
-  if(this.handleOnTimeout) {
-    try {
-      this.handleOnTimeout();
-    }catch(e) {
-      console.log("this.handleOnTimeout:" + e.message);
-    }
-  }
-
-  return true;
-}
 
 /*!
  * Chart.js
@@ -40410,10 +39483,8 @@ UISoundEffects.prototype.initUISoundEffects = function(type, w, h, bg) {
 }
 
 UISoundEffects.prototype.onInit = function() {
-  var wm = this.getWindowManager();
-
-  this.setValue(wm.soundMusicAutoPlay);
-  wm.setSoundEffectsEnable(wm.soundMusicAutoPlay);
+  this.setValue(true);
+  wm.setSoundEffectsEnable(true);
 
   return;
 }
@@ -40588,15 +39659,17 @@ UISprite.prototype.afterChildAppended = function(shape) {
 }
 
 UISprite.prototype.setValue = function(value) {
-  this.setImage(UIElement.IMAGE_DEFAULT, value);
+  return this.setImageSrc(value);
+}
 
-  return;
+UISprite.prototype.getValue = function() {
+  return this.getImageSrc();
 }
 
 UISprite.prototype.setImageSrc = function(value) {
   this.setImage(UIElement.IMAGE_DEFAULT, value);
 
-  return;
+  return this;
 }
 
 UISprite.prototype.getImageSrc = function(type) {
@@ -41087,7 +40160,9 @@ UISkeletonAnimation.startTimerIfNot = function() {
   }
 
   function stepIt() {
-    dragonBones.animation.WorldClock.clock.advanceTime(0.04);
+    if(WWindowManager.getInstance().getPaintEnable()) {
+      dragonBones.animation.WorldClock.clock.advanceTime(0.04);
+    }
   }
 
   UISkeletonAnimation.timerID = setInterval(stepIt, 25);
@@ -41380,50 +40455,17 @@ UIScene.prototype.initUIScene = function(type, w, h, bg) {
   return this;
 }
 
-UIScene.prototype.saveGameState = function() {
-  if(!this.gameState) {
-    this.gameState = this.toJson();
-  }
-
-  return;
-}
-
-UIScene.prototype.restoreGameState = function() {
-  if(this.gameState) {
-    this.fromJson(this.gameState);
-    this.relayout();
-  }
-
-  return;
-}
-
 UIScene.prototype.resetGame = function() {
   if(this.world) {
     var world = this.world;
     Physics.destroyWorld(world);
     this.world = null;
-
-    var soundsValue = [];
-
-    for(var i = 0; i < this.children.length; i++) {
-      var iter = this.children[i];
-      if(iter.isUISound) {
-        soundsValue.push(iter.getValue());
-      }
-    }
-
-    this.restoreGameState();
-    this.doInit();
-    this.initChildren();
-    
-    for(var i = 0; i < this.children.length; i++) {
-      var iter = this.children[i];
-      if(iter.isUISound && soundsValue.length) {
-        var value = soundsValue.shift();
-        iter.setValue(value);
-      }
-    }
   }
+
+  this.restoreState();
+  this.relayout();
+  this.doInit();
+  this.initChildren();
   this.updateStickyChildren();
 
   return;
@@ -41464,8 +40506,8 @@ UIScene.prototype.doInit = function() {
 }
 
 UIScene.prototype.onInit = function() {
-  if(this.enablePhysics) {
-    this.saveGameState();
+  if(!this.getSavedState()) {
+    this.saveState();
   }
 
   this.doInit();
@@ -41481,7 +40523,7 @@ UIScene.prototype.onDeinit = function() {
     Physics.destroyWorld(world);
     this.world = null;
   }
-
+  this.clearState();  
   this.stop();
 
   return;
@@ -42557,9 +41599,8 @@ UIFrameAnimation.prototype.setValue = function(value) {
       var name = "option_image_" + (k++);
       this.setImage(name, iter);
     }
-
-    this.syncImageFrames();
   }
+  this.syncImageFrames();
   
   return this;
 }
@@ -43994,10 +43035,24 @@ UITimer.prototype.shapeCanBeChild = function(shape) {
 }
 
 UITimer.prototype.onInit = function() {
+  this.start();
+
+  return;
+}
+
+UITimer.prototype.start = function() {
+  if(this.timerID) {
+    console.log("Timer is alread started:" + this.timerID);
+    return;
+  }
+
   var me = this;
+  this.paused = false;
   this.startTime = Date.now();
   
   function onTimer() {
+    if(me.paused) return;
+
     me.times--;
 
     if(me.parentShape) {
@@ -44020,7 +43075,28 @@ UITimer.prototype.onInit = function() {
     this.timerID = setInterval(onTimer, me.duration);
   }
 
-  return;
+  return this;
+}
+
+UITimer.prototype.stop = function() {
+  if(this.timerID) {
+    clearInterval(this.timerID);
+    this.timerID = 0;
+  }
+
+  return this;
+}
+
+UITimer.prototype.pause = function() {
+  this.paused = true;
+
+  return this;
+}
+
+UITimer.prototype.resume = function() {
+  this.paused = false;
+
+  return this;
 }
 
 UITimer.prototype.getElapsedTime = function() {
@@ -48274,7 +47350,6 @@ UIParticles.prototype.setEmitterPosition = function(x, y) {
 }
 
 UIParticles.prototype.onInit = function() {
-  this.initParticles();
   this.start();
 
   return;
@@ -48376,6 +47451,11 @@ UIParticles.prototype.initParticles = function() {
 
 UIParticles.prototype.start = function() {
   var me = this;
+  if(this.timerID) {
+    return this;
+  }
+
+  this.initParticles();
   function update() {
     if(!me.parentShape || !me.emitter) {
       clearInterval(me.timerID);
@@ -48383,7 +47463,7 @@ UIParticles.prototype.start = function() {
       return;
     }
 
-    if(me.isVisible()) {
+    if(me.isVisible() && !me.paused && WWindowManager.getInstance().getPaintEnable()) {
       var now = Date.now();
       var elapsed = (now - me.lastUpdateTime)/1000;
       me.emitter.update(elapsed);
@@ -48392,6 +47472,28 @@ UIParticles.prototype.start = function() {
   }
 
   me.timerID = setInterval(update, 25);
+
+  return this;
+}
+
+UIParticles.prototype.stop = function() {
+  clearInterval(this.timerID);
+  this.timerID = null;
+  this.emitter = null;
+
+  return this;
+}
+
+UIParticles.prototype.pause = function() {
+  this.paused = true;
+
+  return this;
+}
+
+UIParticles.prototype.resume = function() {
+  this.paused = false;
+
+  return this;
 }
 
 UIParticles.prototype.drawParticle = function(canvas, particle) {
@@ -48495,8 +47597,17 @@ function loadDragonBoneArmature(textureJsonURL, skeletonJsonURL, textureURL, onD
   texture.onload = function() {
     httpGetJSON(textureJsonURL, function(data) {
       var textureData = data;
+      if(!data) {
+        console.log("Get Json Failed:" + textureJsonURL);
+        return;
+      }
 
       httpGetJSON(skeletonJsonURL, function(data) {
+        if(!data) {
+          console.log("Get Json Failed:" + skeletonJsonURL);
+          return;
+        }
+
         var skeletonData = data;
         var factory = new dragonBones.factorys.GeneralFactory();
 
@@ -54016,6 +53127,1053 @@ function cantkWeiXinRegisterControls() {
 
 cantkWeiXinRegisterControls();
 
+
+/*
+ * File: ui-call-events-handler.js
+ * Author:  Li XianJing <xianjimli@hotmail.com>
+ * Brief: call events handler 
+ * 
+ * Copyright (c) 2011 - 2015  Li XianJing <xianjimli@hotmail.com>
+ * 
+ */
+
+///////////////////////////////////////////////////////////////
+UIElement.prototype.callOnUpdateTransformHandler = function() {
+  if(!this.handleOnUpdateTransform) {
+    var sourceCode = this.events["onUpdateTransform"];
+    if(sourceCode) {
+      sourceCode = "this.handleOnUpdateTransform = function() {\n" + sourceCode + "\n}\n";
+      try {
+        eval(sourceCode);
+      }catch(e) {
+        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
+      }
+    }
+  }
+
+  if(this.handleOnUpdateTransform) {
+    try {
+      this.handleOnUpdateTransform();
+    }catch(e) {
+      console.log("this.handleOnUpdateTransform:" + e.message);
+    }
+  }
+
+  return;
+}
+
+UIElement.prototype.callOnPointerDownHandler = function(point) {
+  if(!this.enable) {
+    return false;
+  }
+
+  if(!this.handlePointerDown) {
+    var sourceCode = this.events["onPointerDown"];
+    if(sourceCode) {
+      sourceCode = "this.handlePointerDown = function(point) {\n" + sourceCode + "\n}\n";
+      try {
+        eval(sourceCode);
+      }catch(e) {
+        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
+      }
+    }
+  }
+
+  if(this.handlePointerDown) {
+    try {
+      this.handlePointerDown(point);
+    }catch(e) {
+      console.log("this.handlePointerDown:" + e.message);
+    }
+  }
+
+  return true;
+}
+
+UIElement.prototype.callOnPointerMoveHandler = function(point) {
+  if(!this.enable) {
+    return false;
+  }
+
+  if(!this.handlePointerMove) {
+    var sourceCode = this.events["onPointerMove"];
+    if(sourceCode) {
+      sourceCode = "this.handlePointerMove = function(point) {\n" + sourceCode + "\n}\n";
+      try {
+        eval(sourceCode);
+      }catch(e) {
+        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
+      }
+    }
+  }
+
+  if(this.handlePointerMove) {
+    try {
+      this.handlePointerMove(point);
+    }catch(e) {
+      console.log("this.handlePointerMove:" + e.message);
+    }
+  }
+
+  return true;
+}
+
+UIElement.prototype.callOnPointerUpHandler = function(point) {
+  if(!this.enable) {
+    return false;
+  }
+
+  if(!this.handlePointerUp) {
+    var sourceCode = this.events["onPointerUp"];
+    if(sourceCode) {
+      sourceCode = "this.handlePointerUp = function(point) {\n" + sourceCode + "\n}\n";
+      try {
+        eval(sourceCode);
+      }catch(e) {
+        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
+      }
+    }
+  }
+
+  if(this.handlePointerUp) {
+    try{
+      this.handlePointerUp(point);
+    }catch(e) {
+      console.log("this.handlePointerUp:" + e.message);
+    }
+  }
+  
+  return true;
+}
+
+UIElement.prototype.callOnLongPressHandler = function(point) {
+  if(!this.enable) {
+    return false;
+  }
+
+  if(!this.handleLongPress) {
+    var sourceCode = this.events["onLongPress"];
+    if(sourceCode) {
+      sourceCode = "this.handleLongPress = function(point) {\n" + sourceCode + "\n}\n";
+      try {
+        eval(sourceCode);
+      }catch(e) {
+        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
+      }
+    }
+  }
+
+  if(this.handleLongPress) {
+    try {
+      this.handleLongPress(point);
+    }catch(e) {
+      console.log("this.handleLongPress:" + e.message);
+    }
+  }
+
+  return true;
+}
+
+UIElement.prototype.callOnDoubleClickHandler = function(point) {
+  if(this.mode === Shape.MODE_EDITING) {
+    if(this.textType != Shape.TEXT_NONE) {
+      this.editText(point);
+    }
+    else {
+      this.showProperty();
+    }
+
+    return true;
+  }
+  
+  if(!this.enable) {
+    return false;
+  }
+
+  if(!this.handleDoubleClick) {
+    var sourceCode = this.events["onDoubleClick"];
+    if(sourceCode) {
+      sourceCode = "this.handleDoubleClick = function(point) {\n" + sourceCode + "\n}\n";
+      try {
+        eval(sourceCode);
+      }catch(e) {
+        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
+      }
+    }
+  }
+
+  if(this.handleDoubleClick) {
+    try {
+      this.handleDoubleClick(point);
+    }catch(e) {
+      console.log("this.handleDoubleClick:" + e.message);
+    }
+  }
+
+  this.hitTestResult = 0;
+
+  return true;
+}
+
+UIElement.prototype.callOnPaintHandler = function(canvas2dCtx) {
+  if(this.mode === Shape.MODE_EDITING) {
+    return true;
+  }
+  
+  if(!this.enable) {
+    return false;
+  }
+
+  if(!this.handlePaint) {
+    var sourceCode = this.events["onPaint"];
+    if(sourceCode) {
+      sourceCode = "this.handlePaint = function(canvas2dCtx) {\n" + sourceCode + "\n}\n";
+      try {
+        eval(sourceCode);
+      }catch(e) {
+        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
+      }
+    }
+  }
+
+  if(this.handlePaint) {
+    try {
+      this.handlePaint(canvas2dCtx);
+    }catch(e) {
+      console.log("this.handlePaint:" + e.message);
+    }
+  }
+
+  return true;
+}
+
+UIElement.prototype.callOnClickHandler = function(point) {
+  if(!this.enable) {
+    return false;
+  }
+
+  if(this.mode === Shape.MODE_EDITING) {
+    return false;
+  }
+  
+  if(this.onClicked) {
+    this.onClicked(point);
+  }
+
+  if(!this.handleClick) {
+    var sourceCode = this.events["onClick"];
+    if(sourceCode) {
+      sourceCode = "this.handleClick = function(point) {\n" + sourceCode + "\n}\n";
+      try {
+        eval(sourceCode);
+      }catch(e) {
+        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
+      }
+    }
+  }
+
+  if(!this.children.length) {
+    console.log("clicked: " + this.type + "(" + this.name + ")");
+  }
+
+  if(this.handleClick) {
+    try {
+      this.handleClick(point);
+    }catch(e) {
+      console.log("this.handleClick:" + e.message);
+    }
+  }
+
+  return;
+}
+
+UIElement.prototype.callOnScrollDoneHandler = function() {
+  if(!this.enable) {
+    return false;
+  }
+
+  if(!this.handleOnScrollDone) {
+    var sourceCode = this.events["onScrollDone"];
+    if(sourceCode) {
+      sourceCode = "this.handleOnScrollDone = function() {\n" + sourceCode + "\n}\n";
+      try {
+        eval(sourceCode);
+      }catch(e) {
+        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
+      }
+    }
+  }
+
+  if(this.handleOnScrollDone) {
+    try {
+      this.handleOnScrollDone();
+    }catch(e) {
+      console.log("this.handleOnScrollDone:" + e.message);
+    }
+  }
+
+  return true;
+}
+
+UIElement.prototype.callOnRemovedHandler = function() {
+  if(!this.enable) {
+    return false;
+  }
+
+  if(!this.handleOnRemoved) {
+    var sourceCode = this.events["onRemoved"];
+    if(sourceCode) {
+      sourceCode = "this.handleOnRemoved = function() {\n" + sourceCode + "\n}\n";
+      try {
+        eval(sourceCode);
+      }catch(e) {
+        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
+      }
+    }
+  }
+
+  if(this.handleOnRemoved) {
+    try {
+      this.handleOnRemoved();
+    }catch(e) {
+      console.log("this.handleOnRemoved:" + e.message);
+    }
+  }
+
+  return true;
+}
+
+UIElement.prototype.callOnChildDraggingHandler = function(sourceChildIndex, targetChildIndex) {
+  if(!this.enable) {
+    return false;
+  }
+
+  if(!this.handleOnChildDragging) {
+    var sourceCode = this.events["onChildDragging"];
+    if(sourceCode) {
+      sourceCode = "this.handleOnChildDragging = function(sourceChildIndex, targetChildIndex) {\n" + sourceCode + "\n}\n";
+      try {
+        eval(sourceCode);
+      }catch(e) {
+        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
+      }
+    }
+  }
+
+  if(this.handleOnChildDragging) {
+    try {
+      this.handleOnChildDragging(sourceChildIndex, targetChildIndex);
+    }catch(e) {
+      console.log("this.handleOnChildDragging:" + e.message);
+    }
+  }
+
+  return true;
+}
+
+UIElement.prototype.callOnChildDraggedHandler = function(sourceChildIndex, targetChildIndex) {
+  if(!this.enable) {
+    return false;
+  }
+
+  if(!this.handleOnChildDragged) {
+    var sourceCode = this.events["onChildDragged"];
+    if(sourceCode) {
+      sourceCode = "this.handleOnChildDragged = function(sourceChildIndex, targetChildIndex) {\n" + sourceCode + "\n}\n";
+      try {
+        eval(sourceCode);
+      }catch(e) {
+        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
+      }
+    }
+  }
+
+  if(this.handleOnChildDragged) {
+    try {
+      this.handleOnChildDragged(sourceChildIndex, targetChildIndex);
+    }catch(e) {
+      console.log("this.handleOnChildDragged:" + e.message);
+    }
+  }
+
+  return true;
+}
+
+UIElement.prototype.callOnChangingHandler = function(value) {
+  if(!this.enable) {
+    return false;
+  }
+
+  if(!this.handleOnChanging) {
+    var sourceCode = this.events["onChanging"];
+    if(sourceCode) {
+      sourceCode = "this.handleOnChanging = function(value) {\n" + sourceCode + "\n}\n";
+      try {
+        eval(sourceCode);
+      }catch(e) {
+        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
+      }
+    }
+  }
+
+  if(this.handleOnChanging) {
+    try {
+      this.handleOnChanging(value);
+    }catch(e) {
+      console.log("this.handleOnChanging:" + e.message);
+    }
+  }
+
+  return true;
+}
+
+UIElement.prototype.callOnChangedHandler = function(value) {
+  if(!this.enable) {
+    return false;
+  }
+
+  if(this.onChanged) {
+    this.onChanged(value);
+
+    return;
+  }
+
+  if(!this.handleOnChanged) {
+    var sourceCode = this.events["onChanged"];
+    if(sourceCode) {
+      sourceCode = "this.handleOnChanged = function(value) {\n" + sourceCode + "\n}\n";
+      try {
+        eval(sourceCode);
+      }catch(e) {
+        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
+      }
+    }
+  }
+
+  if(this.handleOnChanged) {
+    try {
+      this.handleOnChanged(value);
+    }catch(e) {
+      console.log("this.handleOnChanged:" + e.message);
+    }
+  }
+
+  return true;
+}
+
+UIElement.prototype.callOnInitHandler = function() {
+  if(!this.handleOnInit) {
+    var sourceCode = this.events["onInit"];
+    if(sourceCode) {
+      sourceCode = "this.handleOnInit = function() {\n" + sourceCode + "\n}\n";
+      try {
+        eval(sourceCode);
+      }catch(e) {
+        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
+      }
+    }
+  }
+
+  if(this.handleOnInit) {
+    try {
+      this.handleOnInit();
+    }catch(e) {
+      console.log("this.handleOnInit:" + e.message);
+    }
+  }
+
+  return true;
+}
+
+UIElement.prototype.callOnFocusInHandler = function() {
+  if(this.onFocusIn) {
+    try {
+      this.onFocusIn();
+    }
+    catch(e) {
+      console.log("onFocusIn:" + e.message);
+    }
+  }
+
+  if(!this.handleOnFocusIn) {
+    var sourceCode = this.events["onFocusIn"];
+    if(sourceCode) {
+      sourceCode = "this.handleOnFocusIn = function() {\n" + sourceCode + "\n}\n";
+      try {
+        eval(sourceCode);
+      }catch(e) {
+        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
+      }
+    }
+  }
+
+  if(this.handleOnFocusIn) {
+    try {
+      this.handleOnFocusIn();
+    }catch(e) {
+      console.log("this.handleOnFocusIn:" + e.message);
+    }
+  }
+
+  return true;
+}
+
+UIElement.prototype.callOnFocusOutHandler = function() {
+  if(this.onFocusOut) {
+    try {
+      this.onFocusOut();
+    }
+    catch(e) {
+      console.log("onFocusOut: " + e.message);
+    }
+  }
+
+  if(!this.handleOnFocusOut) {
+    var sourceCode = this.events["onFocusOut"];
+    if(sourceCode) {
+      sourceCode = "this.handleOnFocusOut = function() {\n" + sourceCode + "\n}\n";
+      try {
+        eval(sourceCode);
+      }catch(e) {
+        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
+      }
+    }
+  }
+
+  if(this.handleOnFocusOut) {
+    try {
+      this.handleOnFocusOut();
+    }catch(e) {
+      console.log("this.handleOnFocusOut:" + e.message);
+    }
+  }
+
+  return true;
+}
+
+/////////////////////////////////////////////////////////
+
+UIListView.prototype.callOnUpdateDataHandler = function() {
+  if(!this.handleOnUpdateData) {
+    var sourceCode = this.events["onUpdateData"];
+    if(sourceCode) {
+      sourceCode = "this.handleOnUpdateData = function(value) {\n" + sourceCode + "\n}\n";
+      try {
+        eval(sourceCode);
+      }catch(e) {
+        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
+      }
+    }
+  }
+
+  if(this.handleOnUpdateData) {
+    try {
+      this.handleOnUpdateData();
+    }catch(e) {
+      console.log("this..handleOnUpdateData:" + e.message);
+    }
+  }
+
+  return true;
+}
+
+///////////////////////////////////////////////////////////////////
+
+UIWindow.prototype.callOnGestureHandler = function(gesture) {
+  if(!this.enable) {
+    return false;
+  }
+
+  if(!this.handleOnGesture) {
+    var sourceCode = this.events["onGesture"];
+    if(sourceCode) {
+      sourceCode = "this.handleOnGesture = function(gesture) {\n" + sourceCode + "\n}\n";
+      try {
+        eval(sourceCode);
+      }catch(e) {
+        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
+      }
+    }
+  }
+
+  if(this.handleOnGesture) {
+    try {
+      this.handleOnGesture(gesture);
+    }catch(e) {
+      console.log("this.callOnGestureHandler:" + e.message);
+    }
+  }
+  
+  console.log("callOnGestureHandler: scale=" + gesture.scale + " rotation=" + gesture.rotation);
+
+  return true;
+}
+
+UIWindow.prototype.callOnBeforeOpenHandler = function(initData) {
+  if(!this.handleOnBeforeOpen) {
+    var sourceCode = this.events["onBeforeOpen"];
+    if(sourceCode) {
+      sourceCode = "this.handleOnBeforeOpen = function(initData) {\n" + sourceCode + "\n}\n";
+      try {
+        eval(sourceCode);
+      }catch(e) {
+        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
+      }
+    }
+  }
+
+  if(this.handleOnBeforeOpen) {
+    try {
+      this.handleOnBeforeOpen(initData);
+    }catch(e) {
+      console.log("onBeforeOpen" + e.message);
+    }
+  }
+
+  return true;
+}
+
+UIWindow.prototype.callOnOpenHandler = function(initData) {
+  if(!this.handleOnOpen) {
+    var sourceCode = this.events["onOpen"];
+    if(sourceCode) {
+      sourceCode = "this.handleOnOpen = function(initData) {\n" + sourceCode + "\n}\n";
+      try {
+        eval(sourceCode);
+      }catch(e) {
+        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
+      }
+    }
+  }
+
+  if(this.handleOnOpen) {
+    try {
+      this.handleOnOpen(initData);  
+    }catch(e) {
+      console.log("onOpen" + e.message);
+    }
+  }
+
+  return true;
+}
+
+UIWindow.prototype.callOnCloseHandler = function(retInfo) {
+  if(!this.handleOnClose) {
+    var sourceCode = this.events["onClose"];
+    if(sourceCode) {
+      sourceCode = "this.handleOnClose = function(retInfo) {\n" + sourceCode + "\n}\n";
+      try {
+        eval(sourceCode);
+      }catch(e) {
+        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
+      }
+    }
+  }
+
+  if(this.handleOnClose) {
+    try {
+      this.handleOnClose(retInfo);
+    }
+    catch(e) {
+      console.log("onClose: " + e.message);
+    }
+  }
+
+  return true;
+}
+
+UIWindow.prototype.callOnSwitchToBackHandler =function() {
+  if(!this.handleOnSwitchToBack) {
+    var sourceCode = this.events["onSwitchToBack"];
+    if(sourceCode) {
+      sourceCode = "this.handleOnSwitchToBack = function() {\n" + sourceCode + "\n}\n";
+      try {
+        eval(sourceCode);
+      }catch(e) {
+        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
+      }
+    }
+  }
+
+  if(this.handleOnSwitchToBack) {
+    try {
+      this.handleOnSwitchToBack();
+    }
+    catch(e) {
+      console.log("OnSwitchToBack: " + e.message);
+    }
+  }
+
+  this.hide();
+
+  return true;
+}
+
+UIWindow.prototype.callOnSwitchToFrontHandler = function() {
+  if(!this.handleOnSwitchToFront) {
+    var sourceCode = this.events["onSwitchToFront"];
+    if(sourceCode) {
+      sourceCode = "this.handleOnSwitchToFront = function() {\n" + sourceCode + "\n}\n";
+      try {
+        eval(sourceCode);
+      }catch(e) {
+        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
+      }
+    }
+  }
+
+  if(this.handleOnSwitchToFront) {
+    try {
+      this.handleOnSwitchToFront();
+    }
+    catch(e) {
+      console.log("OnSwitchToFront: " + e.message);
+    }
+  }
+
+  return true;
+}
+
+UIWindow.prototype.callOnLoadHandler =function() {
+  if(!this.handleOnLoad) {
+    var sourceCode = this.events["onLoad"];
+    if(sourceCode) {
+      sourceCode = "this.handleOnLoad = function() {\n" + sourceCode + "\n}\n";
+      try {
+        eval(sourceCode);
+      }catch(e) {
+        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
+      }
+    }
+  }
+
+  if(this.handleOnLoad) {
+    try {
+      this.handleOnLoad();
+    }
+    catch(e) {
+      console.log("OnLoad: " + e.message);
+    }
+  }
+
+  return true;
+}
+
+UIWindow.prototype.callOnUnloadHandler =function() {
+  if(!this.handleOnUnload) {
+    var sourceCode = this.events["onUnload"];
+    if(sourceCode) {
+      sourceCode = "this.handleOnUnload = function() {\n" + sourceCode + "\n}\n";
+      try {
+        eval(sourceCode);
+      }catch(e) {
+        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
+      }
+    }
+  }
+
+  if(this.handleOnUnload) {
+    try {
+      this.handleOnUnload();
+    }
+    catch(e) {
+      console.log("OnUnload: " + e.message);
+    }
+  }
+
+  return true;
+}
+
+/////////////////////////////////////////////////////////////
+
+UIElement.prototype.callOnMovedHandler = function() {
+  if(!this.handleOnMoved) {
+    var sourceCode = this.events["onMoved"];
+    if(sourceCode) {
+      sourceCode = "this.handleOnMoved = function() {\n" + sourceCode + "\n}\n";
+      try {
+        eval(sourceCode);
+      }catch(e) {
+        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
+      }
+    }
+  }
+
+  if(this.handleOnMoved) {
+    try {
+      this.handleOnMoved();
+    }catch(e) {
+      console.log("this.handleOnMoved:" + e.message);
+    }
+  }
+
+  if(this.cameraFollowMe) {
+    if(!this.xOffsetInWin) {
+      this.xOffsetInWin = this.x;
+    }
+    if(!this.yOffsetInWin) {
+      this.yOffsetInWin = this.y;
+    }
+    var dx = this.x - this.xOffsetInWin;
+    var dy = this.y - this.yOffsetInWin;
+    this.getWindow().setOffset(dx, dy);
+  }
+
+  return true;
+}
+
+UIElement.prototype.callOnBeginContactHandler = function(body) {
+  if(this.onBeginContact) {
+    this.onBeginContact(body);
+
+    return;
+  }
+
+  if(!this.handleOnBeginContact) {
+    var sourceCode = this.events["onBeginContact"];
+    if(sourceCode) {
+      sourceCode = "this.handleOnBeginContact = function(body) {\n" + sourceCode + "\n}\n";
+      try {
+        eval(sourceCode);
+      }catch(e) {
+        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
+      }
+    }
+  }
+
+  if(this.handleOnBeginContact) {
+    try {
+      this.handleOnBeginContact(body);
+    }catch(e) {
+      console.log("this.handleOnBeginContact:" + e.message);
+    }
+  }
+
+  return true;
+}
+
+UIElement.prototype.callOnEndContactHandler = function(body) {
+  if(this.onEndContact) {
+    this.onEndContact(body);
+
+    return;
+  }
+
+  if(!this.handleOnEndContact) {
+    var sourceCode = this.events["onEndContact"];
+    if(sourceCode) {
+      sourceCode = "this.handleOnEndContact = function(body) {\n" + sourceCode + "\n}\n";
+      try {
+        eval(sourceCode);
+      }catch(e) {
+        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
+      }
+    }
+  }
+
+  if(this.handleOnEndContact) {
+    try {
+      this.handleOnEndContact(body);
+    }catch(e) {
+      console.log("this.handleOnEndContact:" + e.message);
+    }
+  }
+
+  return true;
+}
+
+UIElement.prototype.callOnAnimateDoneHandler = function(name) {
+  if(!this.handleOnAnimateDone) {
+    var sourceCode = this.events["onAnimateDone"];
+    if(sourceCode) {
+      sourceCode = "this.handleOnAnimateDone = function(name) {\n" + sourceCode + "\n}\n";
+      try {
+        eval(sourceCode);
+      }catch(e) {
+        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
+      }
+    }
+  }
+
+  if(this.handleOnAnimateDone) {
+    try {
+      this.handleOnAnimateDone(retInfo);
+    }
+    catch(e) {
+      console.log("onAnimateDone: " + e.message);
+    }
+  }
+
+  return true;
+}
+
+UIWindow.prototype.callOnSwipeLeftHandler = function() {
+  if(!this.handleOnSwipeLeft) {
+    var sourceCode = this.events["onSwipeLeft"];
+    if(sourceCode) {
+      sourceCode = "this.handleOnSwipeLeft = function() {\n" + sourceCode + "\n}\n";
+      try {
+        eval(sourceCode);
+      }catch(e) {
+        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
+      }
+    }
+  }
+
+  if(this.handleOnSwipeLeft) {
+    try {
+      this.handleOnSwipeLeft();
+    }catch(e) {
+      console.log("this.handleOnSwipeLeft:" + e.message);
+    }
+  }
+
+  return true;
+}
+
+UIWindow.prototype.callOnSwipeRightHandler = function() {
+  if(!this.handleOnSwipeRight) {
+    var sourceCode = this.events["onSwipeRight"];
+    if(sourceCode) {
+      sourceCode = "this.handleOnSwipeRight = function() {\n" + sourceCode + "\n}\n";
+      try {
+        eval(sourceCode);
+      }catch(e) {
+        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
+      }
+    }
+  }
+
+  if(this.handleOnSwipeRight) {
+    try {
+      this.handleOnSwipeRight();
+    }catch(e) {
+      console.log("this.handleOnSwipeRight:" + e.message);
+    }
+  }
+
+  return true;
+}
+
+UIWindow.prototype.callOnSwipeUpHandler = function() {
+  if(!this.handleOnSwipeUp) {
+    var sourceCode = this.events["onSwipeUp"];
+    if(sourceCode) {
+      sourceCode = "this.handleOnSwipeUp = function() {\n" + sourceCode + "\n}\n";
+      try {
+        eval(sourceCode);
+      }catch(e) {
+        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
+      }
+    }
+  }
+
+  if(this.handleOnSwipeUp) {
+    try {
+      this.handleOnSwipeUp();
+    }catch(e) {
+      console.log("this.handleOnSwipeUp:" + e.message);
+    }
+  }
+
+  return true;
+}
+
+UIWindow.prototype.callOnSwipeDownHandler = function() {
+  if(!this.handleOnSwipeDown) {
+    var sourceCode = this.events["onSwipeDown"];
+    if(sourceCode) {
+      sourceCode = "this.handleOnSwipeDown = function() {\n" + sourceCode + "\n}\n";
+      try {
+        eval(sourceCode);
+      }catch(e) {
+        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
+      }
+    }
+  }
+
+  if(this.handleOnSwipeDown) {
+    try {
+      this.handleOnSwipeDown();
+    }catch(e) {
+      console.log("this.handleOnSwipeDown:" + e.message);
+    }
+  }
+
+  return true;
+}
+
+UIStatus.prototype.callOnBecomeZeroHandler = function() {
+  if(!this.handleOnBecomeZero) {
+    var sourceCode = this.events["onBecomeZero"];
+    if(sourceCode) {
+      sourceCode = "this.handleOnBecomeZero = function() {\n" + sourceCode + "\n}\n";
+      try {
+        eval(sourceCode);
+      }catch(e) {
+        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
+      }
+    }
+  }
+
+  if(this.handleOnBecomeZero) {
+    try {
+      this.handleOnBecomeZero();
+    }catch(e) {
+      console.log("this.handleOnBecomeZero:" + e.message);
+    }
+  }
+
+  return true;
+}
+
+UIStatus.prototype.callOnBecomeFullHandler = function() {
+  if(!this.handleOnBecomeFull) {
+    var sourceCode = this.events["onBecomeFull"];
+    if(sourceCode) {
+      sourceCode = "this.handleOnBecomeFull = function() {\n" + sourceCode + "\n}\n";
+      try {
+        eval(sourceCode);
+      }catch(e) {
+        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
+      }
+    }
+  }
+
+  if(this.handleOnBecomeFull) {
+    try {
+      this.handleOnBecomeFull();
+    }catch(e) {
+      console.log("this.handleOnBecomeFull:" + e.message);
+    }
+  }
+
+  return true;
+}
+
+UITimer.prototype.callOnTimeoutHandler = function() {
+  if(!this.handleOnTimeout) {
+    var sourceCode = this.events["onTimeout"];
+    if(sourceCode) {
+      sourceCode = "this.handleOnTimeout = function() {\n" + sourceCode + "\n}\n";
+      try {
+        eval(sourceCode);
+      }catch(e) {
+        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
+      }
+    }
+  }
+
+  if(this.handleOnTimeout) {
+    try {
+      this.handleOnTimeout();
+    }catch(e) {
+      console.log("this.handleOnTimeout:" + e.message);
+    }
+  }
+
+  return true;
+}
 
 var C_UI_GAMEUI_DEV = "";
 

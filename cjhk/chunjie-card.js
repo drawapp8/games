@@ -1,3 +1,13 @@
+/*
+https://rawgit.com/os-games-html5/games/master/cjhk/chunjie-card.js
+
+bug:
+1.手势动画区域无法滑动选择背景图
+2.预览
+  1)动画手势要hide
+  2)slide要disable
+*/
+
 function EditorWinController(win) {
     //  -- const data --
     var STEP_SELECT_THEME = 0;
@@ -5,7 +15,7 @@ function EditorWinController(win) {
     var STEP_PREVIEW = 2;
     //shucai
     var MUSIC_LIST = ["01.mp3", "03.mp3", "04.mp3"];
-    var MAN_LIST = ['man-old', 'man-kid', 'man-girl'];
+    var MAN_LIST = ['man-old', 'man-kid', 'man-girl', 'man-mama'];
     
     var editor = {
         step: STEP_SELECT_THEME,
@@ -24,6 +34,7 @@ function EditorWinController(win) {
     };
 
     var setSoftkey = function(step) {
+        console.log('setSoftkey()');
         var sk1 = win.find('btn-sk1', true);
         var sk1Icon = sk1.find('ui-image');
         var iconRand = sk1Icon.getImageSrc('option_image_0');
@@ -58,57 +69,64 @@ function EditorWinController(win) {
             alert('error step');
         }
         
-        win.find('ui-page-indicator-number', true).setValue(step); //?
+        win.find('ui-page-indicator-number', true).setValue(step); //todo:?
     };
 
     var setEditor = function(step) {
+        console.log('setEditor()');
         var musicSelector = win.find('group-music-selector');
         var manSelector = win.find('group-man-selector');
-        var bkgSlide = win.find('ui-image-slide-view');
-        var tipBkgSlide = win.find('tip-bkg-slide');
-        
+        var bkgSelector = win.find('ui-image-slide-view');
+        var handAnim = win.find('hand-anim');
+        var y = musicSelector.y;
+
         musicSelector.setVisible(false);
         manSelector.setVisible(false);
-        bkgSlide.setVisible(true);
-        tipBkgSlide.setVisible(true);
-        
+        bkgSelector.setEnable(false);
+        handAnim.setVisible(false);
+
         if (step === STEP_SELECT_THEME){
             musicSelector.setVisible(true);
+            bkgSelector.setEnable(true);
+            handAnim.setVisible(true);
         } else if (step === STEP_SELECT_MAN) {
             manSelector.setVisible(true);
-            manSelector.setPosition(manSelector.x, musicSelector.y);
+            manSelector.setPosition(manSelector.x, y);
         } else if (step === STEP_PREVIEW) {
-            bkgSlide.setVisible(false);
-            tipBkgSlide.setVisible(false);
-            //todo: get slide show current image url and set to win as bkg
+            
         } else {
             alert('error step');
         }
     };
 
     var showContent = function() {
-        win.find('ui-image-slide-view').setValue(editor.bkgId);
+        console.log('showContent()');
+        //win.find('ui-image-slide-view').setValue(editor.bkgId); //todo ?
         win.find('ui-sound-music').play(MUSIC_LIST[editor.musicId]);        
 
         var i = 0;
-        for (i = 0; i < MAN_LIST; i++) {
+        for (i = 0; i < MAN_LIST.length; i++) {
             win.find(MAN_LIST[i]).setVisible(i === editor.manId);
         }
     };
 
     var randomNewCard = function(step) {
+        console.log('randomNewCard()');
         editor.manId = 0;
         editor.musicId = 0;
         editor.bkgId = 0;
-        //todo: rand init, restart music play
+        //todo: restart music
     };
 
     var sendCard = function() {
+        console.log('sendCard()');
     };
     
     this.initWin = function() {
+        console.log('initWin()');
         setSoftkey(editor.step);
         setEditor(editor.step);
+        showContent();
     };
 
     this.onSkLeft = function() {
@@ -131,12 +149,53 @@ function EditorWinController(win) {
         }
     };
 
-    this.openGreetingEditorWin = function() {
-        var initData = editor.greeting;
-        this.openWindow("greeting-editor", 
-            function (retData) {
-                console.log("window closed.");
-            }, false, initData);
+    this.manSelectorOnClick = function(man) {
+        console.log('manSelectorOnClick()');
+        var oldman = win.find('man-old');
+        var x = oldman.x;
+        var y = oldman.y;
+        var i = 0;
+
+        for (i = 0; i < MAN_LIST.length; i++) {
+            if (man.name === MAN_LIST[i])
+                editor.manId = i;
+        }
+
+        for (i = 0; i < MAN_LIST.length; i++) {
+            var curMan = win.find(MAN_LIST[i]);
+            curMan.x = x;
+            curMan.y = y;
+            curMan.setVisible(i === editor.manId);
+        }
+    };
+
+    this.musicSelectorOnClick = function(button) {
+        console.log('musicSelectorOnClick()');
+        if (button.name === 'prev') {
+            if (editor.musicId > 0)
+                editor.musicId -= 1;
+            else 
+                editor.musicId = MUSIC_LIST.length - 1;
+        } else if (button.name === 'next') {
+            if (editor.musicId >= MUSIC_LIST.length - 1)
+                editor.musicId = 0;
+            else 
+                editor.musicId += 1;
+        }
+        console.log("musicId = " + editor.musicId);
+        win.find('ui-sound-music').play(MUSIC_LIST[editor.musicId]);
+    };
+
+    this.onEditGreeting  = function(button) {
+        console.log('onEditGreeting()');
+        win.openWindow('greeting-editor', function(retData){
+            console.log('greeting-editor window closed. retData = ' + retData);
+            var text = retData;
+            if (text && text.length > 0){
+                editor.greeting.text = text;
+                win.find('group-greeting').find('ui-label').setText(text);
+            }
+        }, false, editor.greeting);
     };
 }
 
@@ -147,3 +206,142 @@ function CreateEditorWinController(win) {
 }
 
 CreateEditorWinController(this, initData);
+
+/*
+greeting editor
+*/
+function GreetingWinController(win) {
+    var greeting = null;
+    var isPlaying = false;
+
+    var mylog = function(msg) {
+        console.log(msg);
+        //alert(msg);
+    };
+
+    this.initWin = function(initData) {
+        mylog('initWin(), initData = ' + initData);
+        greeting = initData;
+        win.find('ui-mledit', true).setText(greeting.text);
+        win.find('delete', true).setVisible(greeting.voiceLocalId.length > 0);
+    };
+
+    this.onDelete = function() {
+        greeting.voiceLocalId = '';
+        greeting.voiceServerId = '';
+        win.find('delete', true).setVisible(false);
+    };
+
+    this.onRecord = function() {
+        if (isPlaying)
+            return;
+
+        this.onDelete();
+
+        win.openWindow("recording", function (retData) {
+            console.log("recording window closed. retData = " + retData);
+            if (! retData)
+                return;
+            if (! isWeiXin())
+                return;
+
+            greeting.voiceLocalId = retData;
+            win.find('delete', true).setVisible(true);
+            console.log('begin upload voice');
+            
+            wx.uploadVoice({
+                localId: greeting.voiceLocalId,
+                isShowProgressTips: 1, // 默认为1，显示进度提示
+                success: function (res) {
+                    greeting.voiceServerId = res.serverId; //返回音频的服务器端ID
+                    mylog('recServerId = ' + recServerId);
+                }
+            });
+        }, false, initData);
+    };
+
+    this.onPlay = function() {
+        if (! isWeiXin())
+            return;
+        if (! greeting.voiceLocalId)
+            return;
+        mylog('greeting.voiceLocalId = ' + greeting.voiceLocalId);
+        wx.playVoice({localId: greeting.voiceLocalId});
+        isPlaying = true;
+        wx.onVoicePlayEnd({
+            success: function (res) {
+                isPlaying = false;
+            }
+        });
+    };
+
+    this.onChoose = function() {
+        win.openWindow('greeting-list', function(retData){
+            var text = retData;
+            console.log('greeting-list window retData = ' + retData);
+            win.find('ui-mledit', true).setText(text);
+        }, false);
+    };
+}
+
+function CreateGreetingWinController(win, initData) {
+    win.controller = new GreetingWinController(win);
+    win.controller.initWin(initData);
+    return win.controller;
+}
+
+CreateGreetingWinController(this, initData);
+
+/*
+recording
+*/
+function RecordingWinController(win) {
+    var isRecording = false;
+    
+    var mylog = function(msg) {
+        //console.log(msg);
+        alert(msg);
+    };
+
+    var startRecord = function() {
+        mylog('startRecord()');
+        if (! isWeiXin())
+            return;
+        wx.startRecord();
+        isRecording = true;
+
+        wx.onVoiceRecordEnd({
+            // 录音时间超过一分钟没有停止的时候会执行 complete 回调
+            complete: function (res) {
+                isRecording = false;
+                win.closeWindow(res.localId);
+            }
+        });
+    };
+
+    this.initWin = function(initData) {    
+        startRecord();
+    };
+
+    this.onPause = function() {
+        mylog('onPause()');
+        if (! isWeiXin() || ! isRecording){
+            win.closeWindow('');
+            return;
+        }
+        mylog('wx.stopRecord() begin');
+        wx.stopRecord({success: function (res) {
+            mylog('wx.stopRecord() success, res.localId = ' + res.localId);
+            isRecording = false;
+            win.closeWindow(res.localId);
+        }});
+    };
+}
+
+function CreateRecordingWinController(win, initData) {
+    win.controller = new RecordingWinController(win);
+    win.controller.initWin(initData);
+    return win.controller;
+}
+
+CreateRecordingWinController(this, initData);
