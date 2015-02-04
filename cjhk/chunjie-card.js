@@ -13,10 +13,15 @@ function EditorWinController(win) {
     var STEP_SELECT_THEME = 0;
     var STEP_SELECT_MAN = 1;
     var STEP_PREVIEW = 2;
+
+    var MODE_EDITOR = 0;
+    var MODE_VIEW = 1;
+
     //shucai
     var MUSIC_LIST = ["01.mp3", "03.mp3", "04.mp3"];
     var MAN_LIST = ['man-old', 'man-kid', 'man-girl', 'man-mama'];
     
+    var mode = MODE_EDITOR;
     var editor = {
         step: STEP_SELECT_THEME,
         musicId: 0,
@@ -32,6 +37,7 @@ function EditorWinController(win) {
             serverId: ""            
         }
     };
+
     var soundMusic = win.find('ui-sound-music');
 
     var setSoftkey = function(step) {
@@ -79,12 +85,16 @@ function EditorWinController(win) {
         var manSelector = win.find('group-man-selector');
         var bkgSelector = win.find('ui-image-slide-view');
         var handAnim = win.find('hand-anim');
+        var tipWinTitle = win.find('tip-win-title');
+        var voiceButton = win.find('group-greeting').find('voice');
         var y = musicSelector.y;
 
         musicSelector.setVisible(false);
         manSelector.setVisible(false);
         bkgSelector.setEnable(false);
         handAnim.setVisible(false);
+        tipWinTitle.setVisible(true);
+        voiceButton.setVisible(true);
 
         if (step === STEP_SELECT_THEME){
             musicSelector.setVisible(true);
@@ -94,14 +104,15 @@ function EditorWinController(win) {
             manSelector.setVisible(true);
             manSelector.setPosition(manSelector.x, y);
         } else if (step === STEP_PREVIEW) {
-            
+            tipWinTitle.setVisible(false);
+            voiceButton.setVisible(editor.greeting.voiceLocalId && editor.greeting.voiceServerId);            
         } else {
             alert('error step');
         }
     };
 
-    var showContent = function() {
-        console.log('showContent()');
+    var showContentForEditor = function() {
+        console.log('showContentForEditor()');
 
         //restore music play
         if (soundMusic.getValue() && ! win.getWindowManager().isSoundMusicPlaying()) {
@@ -112,6 +123,41 @@ function EditorWinController(win) {
         var i = 0;
         for (i = 0; i < MAN_LIST.length; i++) {
             win.find(MAN_LIST[i]).setVisible(i === editor.manId);
+        }
+    };
+
+    var showContentForPreview = function() {
+        console.log('showContentForPreview()');
+
+        //restart music
+        if (soundMusic.getValue()) {
+            soundMusic.stop();
+            soundMusic.play(MUSIC_LIST[editor.musicId]);
+        }
+
+        //play voice
+        if (editor.greeting.voiceLocalId && editor.greeting.voiceServerId) {
+            if (! isWeiXin())
+                return;
+            wx.playVoice({localId: greeting.voiceLocalId});
+        }
+    };
+
+    var showContentForView = function() {
+        console.log('showContentForView()');
+    };
+
+    var showContent = function() {
+        if (mode === MODE_VIEW){
+            showContentForView();
+        } else if (mode === MODE_EDITOR){
+            if (editor.step === STEP_PREVIEW) {
+                showContentForPreview();
+            } else {
+                showContentForEditor();
+            }
+        } else {
+            alert('error mode');
         }
     };
 
@@ -179,7 +225,7 @@ function EditorWinController(win) {
         if (button.name === 'prev') {
             if (editor.musicId > 0)
                 editor.musicId -= 1;
-            else 
+            else
                 editor.musicId = MUSIC_LIST.length - 1;
         } else if (button.name === 'next') {
             if (editor.musicId >= MUSIC_LIST.length - 1)
@@ -198,11 +244,12 @@ function EditorWinController(win) {
     this.onEditGreeting = function(button) {
         console.log('onEditGreeting()');
         win.openWindow('greeting-editor', function(retData){
-            console.log('greeting-editor window closed. retData = ' + retData);
-            var text = retData;
-            if (text && text.length > 0){
-                editor.greeting.text = text;
-                win.find('group-greeting').find('ui-label').setText(text);
+            console.log('greeting-editor window closed. retData = ' + retData);            
+            if (retData){
+                editor.greeting = retData;
+                if (editor.greeting.text) {
+                    win.find('group-greeting').find('text').setText(text);
+                }
             }
         }, false, editor.greeting);
     };
@@ -211,7 +258,17 @@ function EditorWinController(win) {
         showContent();
     };
 
-    this.onClickMusic = function(soundMusic) {
+    this.onClickVoice = function(button) {
+        //play voice
+        if (editor.greeting.voiceLocalId && editor.greeting.voiceServerId) {
+            if (! isWeiXin())
+                return;
+            wx.playVoice({localId: greeting.voiceLocalId});
+        }
+    };
+    /*
+    this.onClickMusic = function(soundMusic) { //? no used
+        console.log('onClickMusic()');
         soundMusic.stop();
         if (soundMusic.getValue()) {            
             soundMusic.play(MUSIC_LIST[editor.musicId]);            
@@ -220,6 +277,7 @@ function EditorWinController(win) {
             win.find('group-music-selector').setVisible(soundMusic.getValue());
         }
     };
+    */
 }
 
 function CreateEditorWinController(win) {
