@@ -228,8 +228,6 @@ function CreateEditorWinController(win) {
     return win.controller;
 }
 
-CreateEditorWinController(this);
-
 /*
 greeting editor
 */
@@ -313,8 +311,6 @@ function CreateGreetingWinController(win, initData) {
     return win.controller;
 }
 
-CreateGreetingWinController(this, initData);
-
 /*
 recording
 */
@@ -368,5 +364,3 @@ function CreateRecordingWinController(win, initData) {
     win.controller.initWin(initData);
     return win.controller;
 }
-
-CreateRecordingWinController(this, initData);
