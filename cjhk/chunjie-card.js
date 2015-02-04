@@ -269,7 +269,7 @@ function EditorWinController(win) {
 
             var value = getUrlParam('gvoice');
             if (value){
-                editor.greeting.voiceServerId = escape(value);
+                editor.greeting.voiceServerId = unescape(value);
                 //todo: download voice
 
                 if (isWeiXin){
@@ -286,7 +286,7 @@ function EditorWinController(win) {
 
             value = getUrlParam('gtext');
             if (value)
-                editor.greeting.text = escape(value);
+                editor.greeting.text = unescape(value);
 
             showContent();
         } else {
