@@ -276,6 +276,7 @@ function GreetingWinController(win) {
     };
 
     this.onChoose = function() {
+        alert('build: ' + gBuildDate);
         win.openWindow('greeting-list', function(retData){
             var text = retData;
             console.log('greeting-list window retData = ' + retData);
@@ -299,11 +300,13 @@ function RecordingWinController(win) {
     var isRecording = false;
     
     var mylog = function(msg) {
-        //console.log(msg);
-        alert(msg);
+        console.log(msg);
+        //alert(msg);
     };
 
     var startRecord = function() {
+        win.getWindowManager().stopSoundMusic();
+
         mylog('startRecord()');
         if (! isWeiXin())
             return;
@@ -319,7 +322,7 @@ function RecordingWinController(win) {
         });
     };
 
-    this.initWin = function(initData) {    
+    this.initWin = function(initData) {
         startRecord();
     };
 
