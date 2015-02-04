@@ -257,7 +257,7 @@ function GreetingWinController(win) {
                     mylog('recServerId = ' + recServerId);
                 }
             });
-        }, false, initData);
+        }, false);
     };
 
     this.onPlay = function() {
