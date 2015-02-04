@@ -101,8 +101,10 @@ function EditorWinController(win) {
 
     var showContent = function() {
         console.log('showContent()');
+        if (win.find('ui-sound-music').getValue()){
+            win.find('ui-sound-music').play(MUSIC_LIST[editor.musicId]);
+        }
         //win.find('ui-image-slide-view').setValue(editor.bkgId); //todo ?
-        win.find('ui-sound-music').play(MUSIC_LIST[editor.musicId]);        
 
         var i = 0;
         for (i = 0; i < MAN_LIST.length; i++) {
@@ -186,7 +188,7 @@ function EditorWinController(win) {
         win.find('ui-sound-music').play(MUSIC_LIST[editor.musicId]);
     };
 
-    this.onEditGreeting  = function(button) {
+    this.onEditGreeting = function(button) {
         console.log('onEditGreeting()');
         win.openWindow('greeting-editor', function(retData){
             console.log('greeting-editor window closed. retData = ' + retData);
@@ -196,6 +198,10 @@ function EditorWinController(win) {
                 win.find('group-greeting').find('ui-label').setText(text);
             }
         }, false, editor.greeting);
+    };
+
+    this.onSwitchToFront = function(button) {
+        showContent();
     };
 }
 
@@ -275,8 +281,7 @@ function GreetingWinController(win) {
         });
     };
 
-    this.onChoose = function() {
-        alert('build: ' + gBuildDate);
+    this.onChoose = function() {        
         win.openWindow('greeting-list', function(retData){
             var text = retData;
             console.log('greeting-list window retData = ' + retData);
