@@ -135,9 +135,12 @@ function EditorWinController(win) {
         console.log('showContentForPreview()');
 
         //show greeting
-        var group = win.find('group-greeting');    
+        var group = win.find('group-greeting');
+        if (! editor.greeting.text && ! editor.greeting.voiceServerId) {
+            group.setVisible(false);
+        }
         group.find('text').setText(editor.greeting.text);
-        group.find('voice').setVisible(editor.greeting.voiceLocalId && editor.greeting.voiceServerId);
+        group.find('voice').setVisible(editor.greeting.voiceServerId);
 
         //restart music
         if (soundMusic.getValue()) {
@@ -146,7 +149,7 @@ function EditorWinController(win) {
         }
 
         //play voice
-        if (editor.greeting.voiceLocalId && editor.greeting.voiceServerId) {
+        if (editor.greeting.voiceServerId) {
             if (! isWeiXin())
                 return;
             wx.playVoice({localId: greeting.voiceLocalId});
@@ -273,7 +276,7 @@ function EditorWinController(win) {
 
     this.onClickVoice = function(button) {
         //play voice
-        if (editor.greeting.voiceLocalId && editor.greeting.voiceServerId) {
+        if (editor.greeting.voiceServerId) {
             if (! isWeiXin())
                 return;
             wx.playVoice({localId: greeting.voiceLocalId});
@@ -315,7 +318,7 @@ function GreetingWinController(win) {
         mylog('initWin(), initData = ' + initData);
         greeting = initData;
         win.find('ui-mledit', true).setText(greeting.text);
-        win.find('delete', true).setVisible(greeting.voiceLocalId.length > 0);
+        win.find('delete', true).setVisible(greeting.voiceLocalId);
     };
 
     this.onDelete = function() {
