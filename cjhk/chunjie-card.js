@@ -106,7 +106,7 @@ function EditorWinController(win) {
             manSelector.setVisible(true);
             manSelector.setPosition(manSelector.x, y);
         } else if (step === STEP_PREVIEW) {
-            tipWinTitle.setVisible(false);            
+            tipWinTitle.setVisible(false);
         } else {
             alert('error step');
         }
@@ -159,7 +159,25 @@ function EditorWinController(win) {
     };
 
     var showContentForView = function() {
-        console.log('showContentForView()');
+        //shwo & hide control
+        var hideList = [
+            'group-sk', 'tip-win-title', 'group-music-selector', 'group-man-selector'
+        ];
+        for (var i=0; i < hideList.length; i++) {
+            win.find(hideList[i]).setVisible(false);
+        }
+        win.find('down-anim').setVisible(true);
+
+        //play voice in wx voice download success
+        //play music
+        if (soundMusic.getValue()) {
+            soundMusic.stop();
+            soundMusic.play(MUSIC_LIST[editor.musicId]);
+        }
+
+        //display greeting text
+        win.find('group-greeting').setVisible(editor.greeting.text);
+        win.find('group-greeting').find('text').setText(editor.greeting.text);
     };
 
     var showContent = function() {
@@ -187,6 +205,35 @@ function EditorWinController(win) {
 
     var sendCard = function() {
         console.log('sendCard()');
+
+        //generate url
+        //url param: ?mode=view&man=1&music=0&bkg=0&gvoice=[weixin://...]&gtext=[%3D%2E....]
+        var url = '&view=1' + 
+                '&man=' + editor.manId + 
+                '&music=' + editor.musicId + 
+                '&bkg=' + editor.bkgId + 
+                '&gvoice=' + escape(editor.greeting.voiceServerId) +
+                '&gtext=' + escape(editor.greeting.text);
+        console.log('url = ' + url);
+
+        if (! isWeiXin())
+            return;
+        wx.onMenuShareAppMessage({
+            title: '春节贺卡',
+            desc: '七巧板互动',
+            link: url, // 分享链接
+            imgUrl: 'https://open.weixin.qq.com/zh_CN/htmledition/res/assets/res-design-download/icon64_appwx_logo.png/', // 分享图标
+            type: 'link', // 分享类型,music、video或link，不填默认为link
+            dataUrl: '', // 如果type是music或video，则要提供数据链接，默认为空
+            success: function () { 
+                // 用户确认分享后执行的回调函数
+                console.log('wx shared success');
+            },
+            cancel: function () { 
+                // 用户取消分享后执行的回调函数
+                console.log('wx shared cancel');
+            }
+        });
     };
 
     var getUrlParam = function(param) {
@@ -197,14 +244,52 @@ function EditorWinController(win) {
         else
             return null;
     };
-    
-    this.initWin = function() {
-        //zhuanfa url: ?mode=view&man=1&music=0&bkg=0&gvoice=[weixin://...]&gtext=[%3D%2E....]
 
-        console.log('initWin()');
-        setSoftkey(editor.step);
-        setEditor(editor.step);
-        showContent();
+
+    
+    this.initWin = function(initData) {
+        console.log('initWin(), initData = ' + initData);
+
+        //zhuanfa url: ?view=1&man=1&music=0&bkg=0&gvoice=[weixin://...]&gtext=[%3D%2E....]
+        var viewMode = getUrlParam('view');
+
+        if (initData === 'edit=1' || ! viewMode) {
+            mode = MODE_EDITOR;
+            setSoftkey(editor.step);
+            setEditor(editor.step);
+            showContent();
+        } else if (viewMode) {
+            mode = MODE_VIEW;
+            console.log('enter view mode');
+            editor.manId = getUrlParam('man');
+            editor.musicId = getUrlParam('music');
+            editor.bkgId = getUrlParam('bkg');
+
+            var value = getUrlParam('gvoice');
+            if (value){
+                editor.greeting.voiceServerId = escape(value);
+                //todo: download voice
+
+                if (isWeiXin){
+                    wx.downloadVoice({
+                        serverId: editor.greeting.voiceServerId, // 需要下载的音频的服务器端ID，由uploadVoice接口获得
+                        isShowProgressTips: 1, // 默认为1，显示进度提示
+                        success: function (res) {
+                            editor.greeting.voiceLocalId = res.localId;
+                            wx.playVoice({localId: editor.greeting.voiceLocalId});
+                        }
+                    });                    
+                }
+            }
+
+            value = getUrlParam('gtext');
+            if (value)
+                editor.greeting.text = escape(value);
+
+            showContent();
+        } else {
+            alert('init error');
+        }
     };
 
     this.onSkLeft = function() {
@@ -309,9 +394,9 @@ function EditorWinController(win) {
     */
 }
 
-function CreateEditorWinController(win) {
+function CreateEditorWinController(win, initData) {
     win.controller = new EditorWinController(win);
-    win.controller.initWin();
+    win.controller.initWin(initData);
     return win.controller;
 }
 
