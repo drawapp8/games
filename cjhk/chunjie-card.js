@@ -192,7 +192,7 @@ function EditorWinController(win) {
         if (soundMusic.getValue()) {
             soundMusic.stop();
             soundMusic.play(MUSIC_LIST[editor.musicId]);            
-        }        
+        }
     };
 
     this.onEditGreeting = function(button) {
@@ -209,6 +209,13 @@ function EditorWinController(win) {
 
     this.onSwitchToFront = function(button) {
         showContent();
+    };
+
+    this.onClickMusic = function(soundMusic) {
+        soundMusic.stop();
+        if (soundMusic.getValue()) {            
+            soundMusic.play(MUSIC_LIST[editor.musicId]);            
+        }
     };
 }
 
