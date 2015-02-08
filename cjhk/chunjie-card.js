@@ -360,7 +360,7 @@ function EditorWinController(win) {
     this.onEditGreeting = function(button) {
         console.log('onEditGreeting()');
         win.openWindow('greeting-editor', function(retData){
-            console.log('greeting-editor window closed. retData = ' + retData);            
+            console.log('greeting-editor window closed. retData = ' + retData);
             if (retData){
                 editor.greeting = retData;
                 if (editor.greeting.text) {

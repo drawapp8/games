@@ -2397,7 +2397,7 @@ function cantkGetImageURL(name) {
 
 
 var gBuildMonth = "15*12+02";
-var gBuildDate = "2015-02-02 16:11:22";
+var gBuildDate = "2015-02-06 11:42:33";
 
 /*
  * File: utils.js
@@ -4036,6 +4036,7 @@ function canvasMaxizeIt(canvas, inlineEdit) {
   canvas.style.position = "absolute";
   canvas.style.top = 0;
   canvas.style.left = 0;
+  canvas.style.zIndex = 0;
 
   if(inlineEdit || isMobile()) {
     canvas.width  = view.width;
@@ -4852,11 +4853,16 @@ ResLoader.loadAudio = function(url, onSuccess, onFail) {
     return proxy.onHitCache(onSuccess, onFail);
   }
 
-  var audio = new Audio();
+  //var audio = new Audio();
+  var audio = document.createElement('audio');
+  document.body.appendChild(audio);
+
   proxy = new ResProxy(src, onSuccess, onFail);
 
   //audio.addEventListener('loadeddata', function (e) {
   //audio.addEventListener('canplaythrough', function (e) {
+  //audio.addEventListener('canplay', function (e) {
+
   audio.addEventListener('loadstart', function (e) {
     proxy.onDone(audio);
   });
@@ -5014,6 +5020,8 @@ EditorElement.prototype.setScrollType = function(scrollType) {
 EditorElement.prototype.show = function() {
   this.isVisibile = true;
   this.element.style.visibility = 'visible';
+  this.element.style.zIndex = 8;
+
   this.element.focus();
   EditorElement.imeOpen = true;
 
@@ -5028,6 +5036,7 @@ EditorElement.prototype.setInputType = function(type) {
 
 EditorElement.prototype.hide = function() {
   this.isVisibile = false;
+  this.element.style.zIndex = 0;
   this.element.style.visibility = 'hidden';  
   this.element.blur();
   this.element.onchange = null;
@@ -5456,6 +5465,14 @@ WImage.create = function(src, onLoad) {
     image = new WImage();
     image.setImageSrc(src, onLoad);
   }
+
+  return image;
+}
+
+WImage.createWithImage = function(img) {
+  var image = new WImage();
+
+  image.setImage(img);
 
   return image;
 }
@@ -8306,6 +8323,10 @@ WWindowManager.prototype.getPaintEnable = function() {
 WWindowManager.prototype.setPaintEnable = function(enablePaint) {
   this.enablePaint = enablePaint;
   console.log("setPaintEnable:" + enablePaint);
+
+  if(enablePaint) {
+    this.postRedraw();
+  }
 
   return this;
 }
@@ -15977,6 +15998,7 @@ UIElement.prototype.addChildWithJson = function(jsShape, index) {
   if(shape) {
     shape.fromJson(jsShape);
     this.addShape(shape, false, null, index);
+    shape.setVisible(true);
   }
 
   return shape;
@@ -16548,6 +16570,10 @@ UIElement.prototype.getBgImage =function() {
   if(!image || !image.getImage()) {
     image = this.images.default_bg;
   }
+  
+  if(!image || !image.getImage()) {
+    image = this.images.normal_bg;
+  }
 
   if(!image || !image.getImage()) {
     return;
@@ -17054,11 +17080,21 @@ UIElement.prototype.onBindData = function(data) {
   if(text !== undefined) {
     this.setText(text);
   }
+  
   if(image !== undefined) {
     this.setImage(UIElement.IMAGE_DEFAULT, image);
   }
+
   if(value !== undefined) {
     this.setValue(value);
+  }
+  
+  if(data.enable !== undefined) {
+    this.setEnable(data.enable);
+  }
+  
+  if(data.visible !== undefined) {
+    this.setVisible(data.visible);
   }
 
   if(data.textColor) {
@@ -17082,9 +17118,28 @@ UIElement.prototype.onBindData = function(data) {
   if(data.height) {
     this.h = data.height;
   }
+  
+  if(data.width) {
+    this.w = data.width;
+  }
 
   if(this.offset) {
     this.offset = 0;
+  }
+
+  var attrs = ["children", "text", "value", "image", "visible", "enable", "textColor", "fillColor", "lineColor", "fontSize", "userData"];
+  for(var key in data) {
+    if(attrs.indexOf(key) >= 0) continue;
+    var value = data[key];
+    var child = this.find(key, true);
+    if(!child) continue;
+
+    if(typeof value  === "object") {
+      child.doBindData(value);
+    }
+    else {
+      child.setValue(value);    
+    }
   }
 
   return;
@@ -17242,9 +17297,7 @@ UIElement.prototype.bindData = function(data, animHint, clearOldData) {
   shape.relayoutChildren(animHint);
   console.log("bindData: done");
 
-  setTimeout(function() {
-    shape.postRedraw();
-  }, 500);
+  shape.postRedraw();
 
   return;
 }
@@ -17267,6 +17320,7 @@ UIElement.prototype.doBindData = function(data, clearOldData) {
   if((this.isUIList || this.isUIGrid)) {
     if(m > n) {
       templateJson.y = 0;
+      templateJson.visible = true;
       for(i = n; i < m; i++) {
         this.addChildWithJson(templateJson);
       }
@@ -17312,43 +17366,23 @@ UIElement.prototype.doBindData = function(data, clearOldData) {
   return;
 }
 
-UIElement.prototype.bindDataUrl = function(dataUrl, preprocess, onBindDone) {
+UIElement.prototype.bindDataUrl = function(dataUrl, doConvert, onBindDone) {
   var rInfo = {};
   var shape = this;
 
-  rInfo.method = "GET";
-  rInfo.url = dataUrl;
-  rInfo.noCache = true;
-
-  rInfo.onDone = function(result, xhr, respContent) {
-    var success = (xhr.status === 200);
-    if(xhr.status === 200) {
-      var data = respContent;
-      if(preprocess) {
-        data = preprocess(respContent);
-      }
-      
-      try {
-        var js = JSON.parse(data);
-
-        shape.bindData(js, "default", true);  
-
-        console.log("bindDataUrl: done");
-      }
-      catch(e) {
-        success = false;
-        console.log("bindDataUrl: failed" + e.message);
-      }
+  httpGetJSON(dataUrl, function(js) {
+    if(doConvert) {
+      js = doConvert(js);
     }
-    
+
+    if(js) {
+      shape.bindData(js, "default", true);
+    }
+
     if(onBindDone) {
-      onBindDone(success);
+      onBindDone(js);
     }
-
-    return;
-  }
-
-  httpDoRequest(rInfo);
+  });
 
   return;
 }
@@ -17452,28 +17486,36 @@ UIElement.prototype.setBgImage = function(src) {
 }
 
 UIElement.prototype.setImage = function(type, src) {
-  type = type ? type : UIElement.IMAGE_DEFAULT;
-
   var me = this;
-  var image = this.images[type];
+  type = type ? type : UIElement.IMAGE_DEFAULT;
     
+  var image = null;
   function onImageLoad(img) {
     me.postRedraw();
     if(me.images.display === UIElement.IMAGE_DISPLAY_DEFAULT && img && img.width) {
-      var rect = image.getImageRect();
+      var rect = image ? image.getImageRect() : null;
       me.w = rect ? rect.w : img.width;
-      me.h = rect.h ? rect.h : img.height;
+      me.h = rect ? rect.h : img.height;
     }
 
     return;
   }
 
-  if(!image) {
-    image = new WImage();
+  if(typeof src === "string") {
+    image = WImage.create(src, onImageLoad);
   }
-  image.setImageSrc(src, onImageLoad);
+  else if(typeof src === "object") {
+    image = WImage.createWithImage(src); 
+  }
+  else {
+    image = WImage.create(src, onImageLoad);
+  }
 
   this.images[type] = image;
+
+  if(!image) {
+    console.log("image is null:" + type + ":" + src);
+  }
 
   return this;
 }
@@ -25773,122 +25815,20 @@ function UIImageButton() {
   return;
 }
 
-UIImageButton.prototype = new UIButton();
+UIImageButton.prototype = new UIElement();
 UIImageButton.prototype.isUIImageButton = true;
 
 UIImageButton.prototype.initUIImageButton = function(type, w, h) {
-  this.initUIButton(type, w, h);
-  this.noTextAlignment = true;
-  this.setImage(UIElement.IMAGE_NORMAL_FG, null);
-  this.setImage(UIElement.IMAGE_ACTIVE_FG, null);
-  this.setImage(UIElement.IMAGE_DISABLE_FG, null);
+  this.initUIElement(type, w, h);
+  this.setImage(UIElement.IMAGE_NORMAL, null);
+  this.setImage(UIElement.IMAGE_ACTIVE, null);
+  this.setImage(UIElement.IMAGE_DISABLE, null);
 
   return this;
 }
 
-UIImageButton.prototype.drawText = function(canvas) {
-  return;
-}
-
 UIImageButton.prototype.shapeCanBeChild = function(shape) {
   return false;
-}
-
-UIImageButton.prototype.drawFgImage = function(canvas) {
-  var bgImage = this.getBgImage();
-  var gapBetweenTextImage = 2;
-  var imageActive = this.getHtmlImageByType(UIElement.IMAGE_ACTIVE_FG);
-  var imageNormal = this.getHtmlImageByType(UIElement.IMAGE_NORMAL_FG);
-  var imageDisable = this.getHtmlImageByType(UIElement.IMAGE_DISABLE_FG);
-  var str = this.getLocaleText(this.text);
-  var fontSize = this.style.fontSize;
-
-  var x = 0;
-  var y = 0;
-  var w = this.w;
-  var h = this.h;
-
-  var image = null;
-  if(this.enable) {
-    image = this.pointerDown ? imageActive : imageNormal;
-    if(this.pointerDown) {
-      if(!bgImage) {
-        canvas.fillStyle = this.style.fillColor;
-        canvas.fillRect(0, 0, w, h);
-      }
-      if(!image) {
-        image = imageNormal;
-        canvas.translate(1, 2);
-      }
-    }
-  }
-  else {
-    image = imageDisable;
-  }
-
-  canvas.font = this.style.getFont();
-  canvas.fillStyle = this.enable ? this.style.textColor : "#CCCCCC";
-  if(image) {
-    var imageW = image.width;
-    var imageH = image.height;
-    var hMargin = this.hMargin;
-
-    if(str) {
-      var textW = canvas.measureText(str).width + 4;
-      if(textW > w) {
-        var fontSize = Math.round((w/textW) * this.style.fontSize);
-        this.style.setFontSize(fontSize)
-        canvas.font = this.style.getFont();
-      }
-      
-      if(this.w > 6 * this.h) {
-        var dx = x + hMargin;
-        var dy = Math.floor(y + (h-imageH)/2);
-        canvas.drawImage(image, 0, 0, imageW, imageH, dx, dy, imageW, imageH);
-
-        dy = Math.floor(y + h/2);
-        dx = Math.floor(x + (w-imageW)/2 + imageW);
-        canvas.textAlign = "center";
-        canvas.textBaseline = "middle";
-        canvas.fillText(str, dx, dy);
-      }
-      else {
-        var size = this.h - fontSize;
-        var dw = Math.min(size, imageW);
-        var dh = Math.min(size, imageH);
-        var dx = Math.floor(x + (w-dw)/2);
-        var dy = Math.floor(y + (h-dh-6)/2);
-        var rect = {x:0, y:0, w:imageW, h:imageH};
-
-        if(dy > 0 && size < imageH) {
-          dy = 0;
-        }
-
-        this.drawImageAt(canvas, image, UIElement.IMAGE_DISPLAY_CENTER, dx, dy, dw, dh, rect);
-
-        dx = Math.floor(x + w/2);
-        dy = dy + dh + gapBetweenTextImage;
-        if((dy + fontSize + 3) > this.h) {
-          dy = this.h - fontSize - 3;
-        }
-        canvas.textAlign = "center";
-        canvas.textBaseline = "top";
-        canvas.fillText(str, dx, dy);
-      }
-    }
-    else {
-      this.drawImageAt(canvas, image, this.images.display, x, y, this.w, this.h);
-    }
-  }
-  else {
-    if(str) {
-      canvas.textAlign = "center";
-      canvas.textBaseline = "middle";
-      canvas.fillText(str, Math.floor(x+w/2), Math.floor(y+h/2));
-    }
-  }
-
-  return;
 }
 
 function UIImageButtonCreator(w, h) {
@@ -26195,6 +26135,16 @@ UIImageSlideView.prototype.getFrameIndicatorParams = function() {
   return {offsetX:dx, offsetY:dy, itemSize:itemSize, n:n};
 }
 
+UIImageSlideView.prototype.getCurrent = function() {
+  return this.currFrame;
+}
+
+UIImageSlideView.prototype.setCurrent = function(currFrame) {
+  this.setCurrentFrame(currFrame);
+
+  return this;
+}
+
 UIImageSlideView.prototype.setCurrentFrame = function(currFrame) {
   this.offset = 0;
   this.currFrame = (currFrame + this.userImages.length)%this.userImages.length;
@@ -26202,7 +26152,7 @@ UIImageSlideView.prototype.setCurrentFrame = function(currFrame) {
 
   this.callOnChangedHandler(this.currFrame);
 
-  return;
+  return this;
 }
 
 UIImageSlideView.prototype.animScrollTo = function(range, newFrame) {
@@ -29340,6 +29290,8 @@ UIProgressBar.prototype.setPercentOnly = function(value, notNotify) {
 }
 
 UIProgressBar.prototype.setPercent = function(value, notNotify) {
+  value = Math.max(0, Math.min(value, 100));
+
   this.setPercentOnly(value, notNotify);
 
   if(this.drag) {
@@ -33041,7 +32993,7 @@ function UIWaitBarCreator(type, w, h, image, imageDisplay) {
   ShapeCreator.apply(this, args);
   this.createShape = function(createReason) {
     var g = new UIWaitBar();
-    if(type !== C_CREATE_FOR_ICON) {
+    if(createReason !== C_CREATE_FOR_ICON) {
       setInterval(function() {
         if(g.needRedraw()) {
           g.offset = (g.offset + 1);
@@ -34055,6 +34007,18 @@ UIWindowManager.prototype.playSoundEffect = function(name) {
 
 //////////////////////////////////////////////////////////////////////
 
+UIWindowManager.prototype.onPointerDownRunning = function(point, beforeChild) {
+  if(this.autoPlayPending) {
+    this.playSoundMusic();
+    this.autoPlayPending = false;
+  }
+
+  if(!beforeChild || this.popupWindow || !this.pointerDown) {
+    return;
+  }
+
+  return this.callOnPointerDownHandler(point);
+}
 
 UIWindowManager.prototype.setSoundMusicURLs = function(soundMusicURLs) {
   this.soundMusicURLs = soundMusicURLs;
@@ -34067,6 +34031,49 @@ UIWindowManager.prototype.getSoundMusicURLs = function() {
 }
 
 UIWindowManager.prototype.loadSoundMusic = function() {
+  if(!this.soundMusicURLs) {
+    return;
+  }
+
+  UIWindowManager.soundMusic = {};
+
+  var me = this;
+  var loop = this.soundMusicLoop;
+  var autoPlay = this.soundMusicAutoPlay;
+
+  var urlArr = this.soundMusicURLs.split("\n");
+  for(var i = 0; i < urlArr.length; i++) {
+    var iter = urlArr[i];
+    ResLoader.loadAudio(iter, function(audio) {
+      var name = decodeURI(basename(audio.src));
+      var info = {audio:audio};
+
+      audio.volume = 0.8;
+      if(autoPlay) {
+        audio.addEventListener('canplaythrough', function (e) {
+          console.log("canplaythrough:" + audio.src);
+          audio.play();
+        });
+
+        audio.addEventListener('canplay', function (e) {
+          console.log("canplay:" + audio.src);
+          audio.play();
+        });
+
+        audio.play();
+        autoPlay = false;
+        me.autoPlayPending = true;
+        console.log("load start:" + audio.src);
+      }
+
+      UIWindowManager.soundMusic[name] = info;
+        });
+  }
+
+  return this;
+}
+
+UIWindowManager.prototype.loadSoundMusicOld = function() {
   if(!this.soundMusicURLs) {
     return;
   }
@@ -34142,6 +34149,7 @@ UIWindowManager.prototype.playSoundMusic = function(name) {
       if(info && info.audio) {
         info.audio.play();
         info.playing = true;
+        console.log("UIWindowManager.prototype.playSoundMusic");
         break;
       }
     }
@@ -34948,14 +34956,14 @@ function AnimationFactory() {
     switch(name) {
       case "anim-forward": {
         var interpolator =  new DecelerateInterpolator();
-        animation = isAndroid() ? new AnimationHTranslateAndroid(true) : new AnimationHTranslate(true);
+        animation = isAndroid() ? new AnimationHTranslate(true) : new AnimationHTranslate(true);
         animation.toLeft();
         animation.init(duration, interpolator);
         break;
       }
       case "anim-backward": {
         var interpolator =  new DecelerateInterpolator();
-        animation = isAndroid() ? new AnimationHTranslateAndroid(true) : new AnimationHTranslate(false);
+        animation = isAndroid() ? new AnimationHTranslate(false) : new AnimationHTranslate(false);
         animation.toRight();
         animation.init(duration, interpolator);
         break;
@@ -42447,6 +42455,83 @@ function UIEdgeCreator() {
 
 
 /*
+ * File:   ui-dragger.js
+ * Author: Li XianJing <xianjimli@hotmail.com>
+ * Brief:  mouse joint, react with pointer event.
+ * 
+ * Copyright (c) 2014 - 2015  Li XianJing <xianjimli@hotmail.com>
+ * 
+ */
+
+function UIDragger() {
+  return;
+}
+
+UIDragger.prototype = new UIElement();
+UIDragger.prototype.isUIDragger = true;
+
+UIDragger.prototype.initUIDragger = function(type, w, h) {
+  this.initUIElement(type, w, h); 
+  this.enableVer = true;
+  this.enableHor = true;
+
+  return this;
+}
+
+UIDragger.prototype.onInit = function() {
+  var sprite = this.getParent();
+
+  var enableHor = this.enableHor;
+  var enableVer = this.enableVer;
+
+  if(sprite.physicsShape || sprite.isUIPhysicsShape || sprite.isUIImage) {
+    sprite.handlePointerDown = function(point) {
+      return UIDragger.handleSpritePointerDown(sprite, point);  
+    }
+
+    sprite.handlePointerMove = function(point) {
+      return UIDragger.handleSpritePointerMove(sprite, point, enableVer, enableHor);  
+    }
+
+    sprite.handlePointerUp = function(point) {
+    }
+  }
+}
+
+UIDragger.handleSpritePointerDown = function(sprite, point) {
+  sprite.saveX  = sprite.x;
+  sprite.saveY  = sprite.y;
+
+  return;
+}
+
+UIDragger.handleSpritePointerMove = function(sprite, point, enableVer, enableHor) {
+  if(sprite.pointerDown) {
+    var dx = sprite.getMoveAbsDeltaX();
+    var x = enableHor ? sprite.saveX + dx : sprite.saveX;
+    
+    var dy = sprite.getMoveAbsDeltaY();
+    var y = enableVer ? sprite.saveY + dy : sprite.saveY;
+
+    sprite.setPosition(x, y);
+  }
+
+  return;
+}
+
+function UIDraggerCreator() {
+  var args = ["ui-dragger", "ui-dragger", null, 1];
+  
+  ShapeCreator.apply(this, args);
+  this.createShape = function(createReason) {
+    var g = new UIDragger();
+    return g.initUIDragger(this.type, 20, 20, null);
+  }
+  
+  return;
+}
+
+/*
  * File:   ui-four-joint.js
  * Author: Li XianJing <xianjimli@hotmail.com>
  * Brief:  four anchor joint 
@@ -42931,7 +43016,8 @@ UIStatus.prototype.setValue = function(value) {
   else if(this.value === 1) {
     this.callOnBecomeFullHandler();
   }
-  this.callOnChangedHandler()
+
+  this.callOnChangedHandler(this.value);
 
   return this.getValue();
 }
@@ -52902,6 +52988,30 @@ UIWeixin.prototype.shapeCanBeChild = function(shape) {
   return false;
 }
 
+UIWeixin.prototype.setShareTitle = function(shareTitle) {
+  this.shareTitle = shareTitle;
+
+  return this;
+}
+
+UIWeixin.prototype.setShareDesc = function(shareDesc) {
+  this.shareDesc = shareDesc;
+
+  return this;
+}
+
+UIWeixin.prototype.setShareLink = function(shareLink) {
+  this.shareLink = shareLink;
+
+  return this;
+}
+
+UIWeixin.prototype.setShareImage = function(shareImage) {
+  this.shareImage = shareImage;
+
+  return this;
+}
+
 UIWeixin.prototype.callOnOperationTriggerHandler = function(operation, res) {
   if(!this.handleOnOperationTrigger) {
     var sourceCode = this.events["onOperationTrigger"];
@@ -54180,6 +54290,7 @@ var C_UI_GAMEUI_DEV = "";
 function cantkGameRegisterControls() {
   var shapeFactory = ShapeFactoryGet();
   shapeFactory.addShapeCreator(new UIParticlesCreator(), C_UI_GAMEUI_DEV);
+  shapeFactory.addShapeCreator(new UIDraggerCreator(), C_UI_GAMEUI_DEV);
   shapeFactory.addShapeCreator(new UIArtTextCreator(), C_UI_GAMEUI_DEV);
   shapeFactory.addShapeCreator(new UIBitmapFontTextCreator(), C_UI_GAMEUI_DEV);
   shapeFactory.addShapeCreator(new UISkeletonAnimationCreator(), C_UI_GAMEUI_DEV);
