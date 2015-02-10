@@ -2397,7 +2397,7 @@ function cantkGetImageURL(name) {
 
 
 var gBuildMonth = "15*12+02";
-var gBuildDate = "2015-02-06 11:42:33";
+var gBuildDate = "2015-02-09 17:44:22";
 
 /*
  * File: utils.js
@@ -2587,7 +2587,7 @@ String.prototype.replaceAll = function(reallyDo, replaceWith, ignoreCase) {
    }   
 }   
 
-/*WordPress convert " to â€œ â€, we need convert it back.*/
+/*WordPress convert " to “ ”, we need convert it back.*/
 function fixJson(json) {
   var i = 0;
   var str = "";
@@ -2598,7 +2598,7 @@ function fixJson(json) {
   for(i = 0; i < n; i++) {
     var c = json.charAt(i);
 
-    if(c === 'â€œ' || c === 'â€') {
+    if(c === '“' || c === '”') {
       c = '"';
     }
 
@@ -3137,19 +3137,19 @@ function TextLayout(canvas) {
       || chr === '!'
       || chr === '\"'
       || chr === '\''
-      || chr === 'ã€‚'
-      || chr === 'ï¼Ÿ'
-      || chr === 'ã€'
-      || chr === 'â€'
-      || chr === 'â€™'
-      || chr === 'ã€‘'
-      || chr === 'ã€‹'
-      || chr === 'ã€‰'
-      || chr === 'ã€•'
-      || chr === 'ï¼‰'
-      || chr === 'ï¼š'
-      || chr === 'ï¼›'
-      || chr === 'ï¼Œ') {
+      || chr === '。'
+      || chr === '？'
+      || chr === '、'
+      || chr === '”'
+      || chr === '’'
+      || chr === '】'
+      || chr === '》'
+      || chr === '〉'
+      || chr === '〕'
+      || chr === '）'
+      || chr === '：'
+      || chr === '；'
+      || chr === '，') {
         return false;
     }
 
@@ -3409,7 +3409,7 @@ function httpGetJSON(url, onDone) {
       try {
         json = JSON.parse(data);
       }catch(e) {
-        console.log("JSON.parse failedï¼š url=" + url + " data:" + data);
+        console.log("JSON.parse failed： url=" + url + " data:" + data);
       }
     }
     onDone(json);
@@ -6237,6 +6237,7 @@ WWidget.putWidget = function(widget) {
     widget.handleClicked = null;
     widget.handleLongPressed = null;
     widget.handleDoubleClicked = null;
+    widget.handleContextMenu = null;
     widget.handleKeyUp = null;
     widget.handleKeyDown = null;
     widget.handleWheel = null;
@@ -6926,6 +6927,10 @@ WWidget.prototype.onContextMenu = function(point) {
   if(target) {
     target.onContextMenu(point);
     this.target = target;
+  }
+
+  if(this.state !== WWidget.STATE_DISABLE && this.handleContextMenu) {
+    this.handleContextMenu(point);
   }
 
   return;
@@ -15393,6 +15398,7 @@ UIElement.prototype.animate = function(config, onAnimationDone) {
   }
 
   var el = this;
+  var win = this.getWindow();
   var duration = config.duration || 1000;
   var xStart = (config.xStart || config.xStart === 0) ? config.xStart : this.x;
   var xEnd = (config.xEnd || config.xEnd === 0) ? config.xEnd : this.x;
@@ -15447,7 +15453,7 @@ UIElement.prototype.animate = function(config, onAnimationDone) {
   }
 
   function animStep() {
-     if(el.dragging || !el.parentShape || !interpolator) {
+     if(el.dragging || !el.parentShape || !interpolator || !win.visible) {
       return false;
      }
 
@@ -33185,11 +33191,13 @@ UIWindowManager.prototype.systemInit = function() {
 
 UIWindowManager.prototype.systemExit = function() {
   console.log("systemExit: ");
-  while(this.history.length > 0) {
-    var topIndex = this.history.length - 1;
-    console.log("CloseWindow: " + topIndex);
+  var n = this.history.length;
+  
+  for(var i = 0; i < n; i++) {
     this.closeCurrentWindow(0, true);
   }
+
+  this.history.length = 0;
 
   this.stopSoundMusic();
   this.callOnUnload();
@@ -38784,7 +38792,7 @@ WebApp.prototype.showWindow = function() {
   var meta = this.view.getMeta();
 
   if(meta && meta.general) {
-    document.title = "ä¸ƒå·§æ¿äº’åŠ¨:" + meta.general.appname;
+    document.title = "七巧板互动:" + meta.general.appname;
   }
 
   return;
@@ -40185,7 +40193,7 @@ UISkeletonAnimation.prototype.initUISkeletonAnimation = function(type, w, h) {
   this.setSizeLimit(50, 50);
   this.setTextType(Shape.TEXT_NONE);
   this.setCanRectSelectable(false, true);
-  this.addEventNames(["onDoubleClick", "onUpdateTransform"]);
+  this.addEventNames(["onDoubleClick", "onUpdateTransform", "onLoadDone"]);
 
   UISkeletonAnimation.startTimerIfNot();
 
@@ -40299,13 +40307,111 @@ UISkeletonAnimation.prototype.destroy = function() {
   return;
 }
 
-UISkeletonAnimation.prototype.loadSkelentonAnimation = function() {
+UISkeletonAnimation.prototype.preprocessTextureAtlas = function(skeletonData) {
+
+  return skeletonData;
+}
+
+UISkeletonAnimation.prototype.getSlotRect = function(name) {
+  if(!this.armature) {
+    return null;
+  }
+
+  var slotList = this.armature._slotList;
+  for(var i = 0; i < slotList.length; i++) {
+    var iter = slotList[i];
+    if(iter.name === name) {
+      var display = iter.getDisplay();
+      return display.textureAtlasRect;
+    }
+  }
+
+  return null;
+}
+
+UISkeletonAnimation.prototype.replaceSlotImage = function(name, image, imageRect) {
+  if(!this.armature) {
+    return this;
+  }
+
+  if(imageRect && imageRect.w) {
+    imageRect.width = imageRect.w;
+  }
+  if(imageRect && imageRect.h) {
+    imageRect.height = imageRect.h;
+  }
+
+  var slotList = this.armature._slotList;
+  for(var i = 0; i < slotList.length; i++) {
+    var iter = slotList[i];
+    if(iter.name === name) {
+      iter.image = image;
+      iter.imageRect = imageRect;
+    }
+  }
+
+  return;
+}
+
+UISkeletonAnimation.prototype.createArmature = function(texture, textureData, skeletonData, onDone) {
+  var factory = new dragonBones.factorys.GeneralFactory();
+
+  factory.addSkeletonData(dragonBones.objects.DataParser.parseSkeletonData(skeletonData));
+  factory.addTextureAtlas(this.preprocessTextureAtlas(new dragonBones.textures.GeneralTextureAtlas(texture, textureData)));
+
+  for(var i = 0; i < skeletonData.armature.length; i++) {
+    var name = skeletonData.armature[i].name;
+    var armature = factory.buildArmature(name);
+
+    if(i === 0) {
+      onDone(armature);
+    }
+  }
+
+  return;
+}
+
+UISkeletonAnimation.prototype.loadDragonBoneArmature = function(textureJsonURL, skeletonJsonURL, textureURL, onDone) {
+  var me = this;
+  var texture = new Image();
+
+  texture.onload = function() {
+    ResLoader.loadJson(textureJsonURL, function(data) {
+      var textureData = data;
+      if(!data) {
+        console.log("Get Json Failed:" + textureJsonURL);
+        return;
+      }
+      ResLoader.loadJson(skeletonJsonURL, function(data) {
+        if(!data) {
+          console.log("Get Json Failed:" + skeletonJsonURL);
+          return;
+        }
+
+        var skeletonData = data;
+        me.createArmature(texture, textureData, skeletonData, onDone);
+      });
+    });
+  }
+
+  texture.src = textureURL;
+
+  return;
+}
+
+
+UISkeletonAnimation.prototype.createSkelentonAnimation = function() {
   var me = this;
   var x = this.w >> 1;
   var y = this.h >> 1;
   var scale = this.animationScale;
 
-  loadDragonBoneArmature(this.textureJsonURL, this.skeletonJsonURL, this.textureURL, function(armature) {
+  if(this.armature) {
+    dragonBones.animation.WorldClock.clock.remove(this.armature);
+    this.armature = null;
+  }
+
+  this.loadDragonBoneArmature(this.textureJsonURL, this.skeletonJsonURL, this.textureURL, function(armature) {
     me.armature = armature;
     armature.setPosition(x, y);
 
@@ -40320,6 +40426,7 @@ UISkeletonAnimation.prototype.loadSkelentonAnimation = function() {
       animationName = me.animationName;
     }
 
+    me.callOnLoadDoneHandler();
     armature.animation.gotoAndPlay(animationName);
     me.postRedraw();
   });
@@ -40329,7 +40436,7 @@ UISkeletonAnimation.prototype.loadSkelentonAnimation = function() {
 
 UISkeletonAnimation.prototype.onFromJsonDone = function() {
   if(this.textureURL && this.textureJsonURL && this.skeletonJsonURL) {
-    this.loadSkelentonAnimation();
+    this.createSkelentonAnimation();
   }
 
   return;
@@ -40359,6 +40466,30 @@ UISkeletonAnimation.prototype.paintSelfOnly =function(canvas) {
   }
 
   return;
+}
+
+UISkeletonAnimation.prototype.callOnLoadDoneHandler = function() {
+  if(!this.handleOnLoadDone) {
+    var sourceCode = this.events["onLoadDone"];
+    if(sourceCode) {
+      sourceCode = "this.handleOnLoadDone = function() {\n" + sourceCode + "\n}\n";
+      try {
+        eval(sourceCode);
+      }catch(e) {
+        console.log("eval sourceCode failed: " + e.message + "\n" + sourceCode);
+      }
+    }
+  }
+
+  if(this.handleOnLoadDone) {
+    try {
+      this.handleOnLoadDone();
+    }catch(e) {
+      console.log("this.handleOnLoadDone:" + e.message);
+    }
+  }
+
+  return true;
 }
 
 function UISkeletonAnimationCreator() {
@@ -40531,7 +40662,14 @@ UIScene.prototype.onDeinit = function() {
     Physics.destroyWorld(world);
     this.world = null;
   }
-  this.clearState();  
+
+//  var me = this;
+//  setTimeout(function() {
+//    me.restoreState();
+//  }, 1000);
+//
+//  this.restoreState();
+//  this.clearState();  
   this.stop();
 
   return;
@@ -43597,7 +43735,7 @@ function UIImageLineCreator() {
       if (pOBJ.hasOwnProperty('accelerate'))
         particle.a.copy(pOBJ['accelerate']);
     },
-    //å¼ºè¡Œæ·»åŠ å±žæ€§
+    //强行添加属性
     addPrototypeByObject : function(target, prototypeObject, filters) {
       for (var singlePrototype in prototypeObject ) {
         if (filters) {
@@ -43885,7 +44023,7 @@ function UIImageLineCreator() {
     reset : function(init) {
       this.life = Infinity;
       this.age = 0;
-      //èƒ½é‡æŸå¤±
+      //能量损失
       this.energy = 1;
       this.dead = false;
       this.sleep = false;
@@ -44076,7 +44214,7 @@ function UIImageLineCreator() {
   Proton.MathUtils = MathUtils;
 
 
-//æ•°å€¼ç§¯åˆ†
+//数值积分
 
   var NumericalIntegration = function(type) {
     this.type = Proton.Util.initValue(type, Proton.EULER);
@@ -47369,7 +47507,7 @@ function UIImageLineCreator() {
 // http://paulirish.com/2011/requestanimationframe-for-smart-animating/
 // http://my.opera.com/emoller/blog/2011/12/20/requestanimationframe-for-smart-er-animating
 
-// requestAnimationFrame polyfill by Erik MÃ¶ller
+// requestAnimationFrame polyfill by Erik Möller
 // fixes from Paul Irish and Tino Zijdel
 ( function() {
     var lastTime = 0;
@@ -47788,7 +47926,7 @@ var __extends = this.__extends || function (d, b) {
 /**
 * @class egret.Matrix
 * @classdesc
-* 2DçŸ©é˜µç±»ï¼ŒåŒ…æ‹¬å¸¸è§çŸ©é˜µç®—æ³•
+* 2D矩阵类，包括常见矩阵算法
 * @extends egret.HashObject
 */
 var Matrix = (function (_super) {
@@ -47823,7 +47961,7 @@ var Matrix = (function (_super) {
   */
   // public methods:
   /**
-  * å‰ç½®çŸ©é˜µ
+  * 前置矩阵
   * @method egret.Matrix#prepend
   * @param a {number}
   * @param b {number}
@@ -47849,7 +47987,7 @@ var Matrix = (function (_super) {
   };
 
   /**
-  * åŽç½®çŸ©é˜µ
+  * 后置矩阵
   * @method egret.Matrix#append
   * @param a {number}
   * @param b {number}
@@ -47875,7 +48013,7 @@ var Matrix = (function (_super) {
   };
 
   /**
-  * å‰ç½®çŸ©é˜µ
+  * 前置矩阵
   * @method egret.Matrix#prependMatrix
   * @param matrix {number}
   * @returns {egret.Matrix}
@@ -47888,7 +48026,7 @@ var Matrix = (function (_super) {
   };
 
   /**
-  * åŽç½®çŸ©é˜µ
+  * 后置矩阵
   * @method egret.Matrix#appendMatrix
   * @param matrix {egret.Matrix}
   * @returns {egret.Matrix}
@@ -47901,7 +48039,7 @@ var Matrix = (function (_super) {
   };
 
   /**
-  * å‰ç½®çŸ©é˜µ
+  * 前置矩阵
   * @method egret.Matrix#prependTransform
   * @param x {number}
   * @param y {number}
@@ -47942,7 +48080,7 @@ var Matrix = (function (_super) {
   };
 
   /**
-  * åŽç½®çŸ©é˜µ
+  * 后置矩阵
   * @method egret.Matrix#appendTransform
   * @param x {number}
   * @param y {number}
@@ -47984,7 +48122,7 @@ var Matrix = (function (_super) {
   };
 
   /**
-  * çŸ©é˜µæ—‹è½¬ï¼Œä»¥è§’åº¦åˆ¶ä¸ºå•ä½
+  * 矩阵旋转，以角度制为单位
   * @method egret.Matrix#rotate
   * @param angle {number}
   * @returns {egret.Matrix}
@@ -48007,7 +48145,7 @@ var Matrix = (function (_super) {
   };
 
   /**
-  * çŸ©é˜µæ–œåˆ‡ï¼Œä»¥è§’åº¦å€¼ä¸ºå•ä½
+  * 矩阵斜切，以角度值为单位
   * @method egret.Matrix#skew
   * @param skewX {number}
   * @param skewY {number}
@@ -48021,7 +48159,7 @@ var Matrix = (function (_super) {
   };
 
   /**
-  * çŸ©é˜µç¼©æ”¾
+  * 矩阵缩放
   * @method egret.Matrix#scale
   * @param x {number}
   * @param y {number}
@@ -48038,7 +48176,7 @@ var Matrix = (function (_super) {
   };
 
   /**
-  * çŸ©é˜µå”¯ä¸€
+  * 矩阵唯一
   * @method egret.Matrix#translate
   * @param x {number}
   * @param y {number}
@@ -48051,7 +48189,7 @@ var Matrix = (function (_super) {
   };
 
   /**
-  * çŸ©é˜µé‡ç½®
+  * 矩阵重置
   * @method egret.Matrix#identity
   * @returns {egret.Matrix}
   */
@@ -48062,7 +48200,7 @@ var Matrix = (function (_super) {
   };
 
   /**
-  * çŸ©é˜µç¿»è½¬
+  * 矩阵翻转
   * @method egret.Matrix#invert
   * @returns {egret.Matrix}
   */
@@ -48084,13 +48222,13 @@ var Matrix = (function (_super) {
   };
 
   /**
-  * æ ¹æ®ä¸€ä¸ªçŸ©é˜µï¼Œè¿”å›žæŸä¸ªç‚¹åœ¨è¯¥çŸ©é˜µä¸Šçš„åæ ‡
+  * 根据一个矩阵，返回某个点在该矩阵上的坐标
   * @method egret.Matrix.transformCoords
   * @param matrix {egret.Matrix}
   * @param x {number}
   * @param y {number}
   * @returns {numberPoint}
-  * @stable C è¯¥æ–¹æ³•ä»¥åŽå¯èƒ½åˆ é™¤
+  * @stable C 该方法以后可能删除
   */
   Matrix.transformCoords = function (matrix, x, y) {
     var resultPoint = egret.Point.identity;
@@ -51800,9 +51938,13 @@ var dragonBones;
 
         return;
       }
-
       var image = texture.image;
       var r = display.textureAtlasRect;
+      //tangram special
+      if(slot.image && slot.imageRect) {
+        image = slot.image;
+        r = slot.imageRect;
+      }
 
       ctx.save();
       m.identity();
@@ -52896,11 +53038,6 @@ UIWeixin.prototype.onAppendedInParent = function() {
   return;
 }
 
-UIWeixin.stack = [];
-UIWeixin.getTop = function() {
-  return UIWeixin.stack.length ? UIWeixin.stack[UIWeixin.stack.length-1] : null;
-}
-
 UIWeixin.jsApiList = [
         'checkJsApi',
         'onMenuShareTimeline',
@@ -52939,8 +53076,6 @@ UIWeixin.jsApiList = [
       ];
 
 UIWeixin.prototype.onFromJsonDone = function() {
-  UIWeixin.stack.push(this);
-  
   var jsApiList = UIWeixin.jsApiList;
   var url = window.btoa(location.href);
   var configURL = this.configURL ? this.configURL : "/weixin/php/json_config.php";
@@ -52950,11 +53085,40 @@ UIWeixin.prototype.onFromJsonDone = function() {
 
   configURL = configURL + "?url=" + url;
   if(!UIWeixin.config) {
-    console.log("to fetch config.");
+    console.log("To fetch UIWeixin.config:" + configURL);
     httpGetJSON(configURL, function onDone(data) {
       UIWeixin.config = data;
       UIWeixin.config.jsApiList = jsApiList;
-      console.log(JSON.stringify(UIWeixin.config, null, "\t"));
+
+      if(UIWeixin.config) {
+        console.log("Fetch UIWeixin.config success:");
+        console.log(JSON.stringify(UIWeixin.config, null, "\t"));
+      }
+      else {
+        console.log("Fetch weixin config failed.");
+        return;
+      }
+
+      function callWeiXinConfig() {
+        try {
+          wx.config(UIWeixin.config);
+          UIWeixin.configDone = true;
+          console.log(JSON.stringify(UIWeixin.config, null, "\t"));
+          console.log("Call wx.config done:");
+        }
+        catch(e) {
+          console.log("wx script is not load yet, try to config lator:");
+          setTimeout(callWeiXinConfig, 100);
+        }
+      }
+
+      if(isWeiXin()) {
+        console.log("Is WeiXin, try to config it.");
+        callWeiXinConfig();
+      }
+      else {
+        console.log("It is not weixin browser");
+      }
     });
   }
 
@@ -52962,24 +53126,21 @@ UIWeixin.prototype.onFromJsonDone = function() {
 }
 
 UIWeixin.prototype.onInit = function() {
+  var me = this;
   wx.ready(function () {
-    UIWeixin.init();
+    UIWeixin.ready = true;
     console.log("wx.ready");
   });
 
   wx.error(function (res) {
-    alert(res.errMsg);
   });
 
-  wx.config(UIWeixin.config);
-
-  console.log("UIWeixin.prototype.onInit");
+  console.log("UIWeixin.prototype.onInit end");
 
   return;
 }
 
 UIWeixin.prototype.onDeinit = function() {
-  UIWeixin.stack.pop();
 
   return;
 }
@@ -52990,24 +53151,28 @@ UIWeixin.prototype.shapeCanBeChild = function(shape) {
 
 UIWeixin.prototype.setShareTitle = function(shareTitle) {
   this.shareTitle = shareTitle;
+  this.updateShareInfo();
 
   return this;
 }
 
 UIWeixin.prototype.setShareDesc = function(shareDesc) {
   this.shareDesc = shareDesc;
+  this.updateShareInfo();
 
   return this;
 }
 
 UIWeixin.prototype.setShareLink = function(shareLink) {
   this.shareLink = shareLink;
+  this.updateShareInfo();
 
   return this;
 }
 
 UIWeixin.prototype.setShareImage = function(shareImage) {
   this.shareImage = shareImage;
+  this.updateShareInfo();
 
   return this;
 }
@@ -53132,20 +53297,16 @@ UIWeixin.prototype.callOnOperationCancelHandler = function(operation, res) {
   return true;
 }
 
-function UIWeixinCreator() {
-  var args = ["ui-weixin", "ui-weixin", null, 1];
-  
-  ShapeCreator.apply(this, args);
-  this.createShape = function(createReason) {
-    var g = new UIWeixin();
-    return g.initUIWeixin(this.type, 200, 200, null);
-  }
-  
-  return;
-}
+UIWeixin.prototype.updateShareInfo = function() { 
+  var weiXin = this;
 
-UIWeixin.init = function() { 
-  var weiXin = UIWeixin.getTop();
+  if(!weiXin.shareTitle || !weiXin.shareDesc) {
+    console.log("UIWeixin.prototype.updateShareInfo: not title or desc");
+    return; 
+  }
+
+  console.log("UIWeixin.prototype.updateShareInfo:" + weiXin.shareTitle + ":" + weiXin.shareDesc +
+    ":" + weiXin.shareLink + ":" + weiXin.shareImage);
 
     wx.onMenuShareAppMessage({
       title: weiXin.shareTitle,
@@ -53224,6 +53385,19 @@ UIWeixin.init = function() {
     });
 
 }
+
+function UIWeixinCreator() {
+  var args = ["ui-weixin", "ui-weixin", null, 1];
+  
+  ShapeCreator.apply(this, args);
+  this.createShape = function(createReason) {
+    var g = new UIWeixin();
+    return g.initUIWeixin(this.type, 200, 200, null);
+  }
+  
+  return;
+}
+
 
 
 var C_UI_WEIXIN_DEV = "";
@@ -54107,7 +54281,7 @@ UIElement.prototype.callOnAnimateDoneHandler = function(name) {
 
   if(this.handleOnAnimateDone) {
     try {
-      this.handleOnAnimateDone(retInfo);
+      this.handleOnAnimateDone(name);
     }
     catch(e) {
       console.log("onAnimateDone: " + e.message);
@@ -65297,5 +65471,6 @@ window.b2WeldJointDef = Box2D.Dynamics.Joints.b2WeldJointDef;
   root.CanTK = CanTK;
 
 }).call(this);
+
 
 

@@ -1,17 +1,68 @@
+// -- egg --
+function Stinger() {
+    this.curIndex = 0;
+    this.itemNum = 0;
+    this.initStinger = function(num) {
+        this.itemNum = num;
+        this.curIndex = Math.floor(Math.random() * num);
+    };
+    this.switchStinger = function(win, index) {
+        if(typeof index === "undefined") {
+            this.curIndex = (this.curIndex + 1) % this.itemNum;
+        } else {
+            this.curIndex = index;
+        }
+        if(typeof this.onSwitchStinger == "function") {
+            this.onSwitchStinger(win, this.curIndex);
+        }
+    };
+    this.getCurIndex = function () {
+        return this.curIndex;
+    };
+    this.onSwitchStinger = function (win, index) {
+        return;  
+    };
+}
+
+SpriteStinger = function() {
+    return;
+};
+SpriteStinger.prototype = new Stinger();
+SpriteStinger.prototype.initSpriteStinger = function(uiName) {
+    this.snowmen = ["http://osgames1.b0.upaiyun.com/games/YinLijun/wxhk/snowman.png",
+                    "http://osgames1.b0.upaiyun.com/games/YinLijun/wxhk/snowoman.png"];
+    this.sheep =  ["http://osgames1.b0.upaiyun.com/games/YinLijun/wxhk/sheep1.png",
+                    "http://osgames1.b0.upaiyun.com/games/YinLijun/wxhk/sheep2.png"];
+    
+    this.imageArray = [this.sheep, this.snowmen];
+    this.imageClass = Math.floor(Math.random() * 2);
+    this.imageList = this.imageArray[this.imageClass];
+    this.initStinger(this.imageList.length);
+    this.uiName = uiName;
+};
+SpriteStinger.prototype.onSwitchStinger = function(win, index) {
+    win.find(this.uiName, true).setImageSrc(this.imageList[index]);
+};
+
+// -- on open --
+
+//todo:
+//1.微信的onReady放到窗口的onLoad中
+//2.微信的语音和图片下载，应该放到wx.onReady中
 function EditorWinController(win) {
     //  -- const data --
     var MODE_EDITOR = 0;
-    var MODE_PREVIVIEW = 1;
+    var MODE_PREVIEW = 1;
     var MODE_VIEW = 2;
 
     //shucai
-    var MUSIC_LIST = ["01.mp3", "03.mp3", "04.mp3"];
+    var bgMusic_LIST = ["01.mp3", "03.mp3", "04.mp3"];
     var MAN_LIST = ['man-mama', 'man-baba', 'man-boy', 'man-girl', 'man-gfa', 'man-gma'];
     
     var controller = this;
     var mode = MODE_EDITOR;
     var editor = {
-        musicId: 0,
+        bgMusicId: 0,
         manId: 0,
         bkgId: 0,
         greeting: {
@@ -19,11 +70,24 @@ function EditorWinController(win) {
             voiceLocalId: "",
             voiceServerId: ""
         },
-        head: {
-            clipCanvas: null,
-            localId: "",
-            serverId: ""
+        photo: {
+            faceCanvas: null,
+            faceRect: {x:0, y:0, w:0, h:0},
+            imgLocalId: "",
+            imgServerId: ""
         }
+    };    
+    var isFaceDelayChange = false; //骨骼未加载时换脸会失败，延迟到ggOnLoadDone再换
+    var ss = new SpriteStinger(); //random egg
+
+    var playMusic = function() {       
+        //if (win.find('ui-sound-Music').getValue()) { //todo: fixme
+        win.getWindowManager().playSoundMusic();
+        //}        
+    };
+
+    var stopMusic = function() {
+        win.getWindowManager().stopSoundMusic();
     };
     
     var getUrlParam = function(param) {
@@ -36,12 +100,11 @@ function EditorWinController(win) {
     };
     
     var initEditorMode = function() {
-        console.log('initEditorMode()');      
-        win.find('bkg-list').setEnable(true);
-        if (editor.greeting.voiceLocalId) {
-            win.find('voice').setVisible('true');
-            win.find('voice-delete').setVisible('true');
-        }
+        var HIDE_LIST = ['baozhu-left', 'baozhu-right', 'lizhi-l1', 'lizhi-l2', 'lizhi-r1', 'lizhi-r2'];
+        hideControls(HIDE_LIST);
+
+        console.log('initEditorMode()');
+        win.find('bkg-list').setEnable(true);        
     };
     
     var hideControls = function(ctrList) {
@@ -49,91 +112,168 @@ function EditorWinController(win) {
             win.find(ctrList[i], true).setVisible(false);
         }
     };
+
+    var playVoiceDelayCallback = function() {
+        console.log('playVoiceDelayCallback()');
+
+        var wm = win.getWindowManager();
+        if (wm.getCurrentWindow().name !== win.name) {
+            setTimeout(playVoiceDelayCallback, 2000);
+            return;
+        }
+
+        if (! isWeiXin() || ! editor.greeting.voiceLocalId){
+            return;
+        }
+
+        stopMusic();
+        console.log('wx playVoice begin');
+        wx.playVoice({localId: editor.greeting.voiceLocalId});
+        wx.onVoicePlayEnd({
+            success: function (res) {
+                console.log('wx playVoice done');
+                playMusic();
+            }
+        });
+    };
+
+    //延迟到场景切到前台(大门已开启)，再播放语音
+    //2秒检测一次是否为前台窗口，是则播放
+    var playVoice = function() {
+        console.log('playVoice() timer setted');
+        setTimeout(playVoiceDelayCallback, 2000);
+    };
     
     var initPreviewMode = function() {
         console.log('initPreviewMode()');
         
         // hide editor controls
         var HIDE_LIST1 = ['intro-bkg', 'intro-man', 'group-man', 'camera-wrap', 'record-wrap'];
-        var HIDE_LIST2 = ['music-prev', 'music-next', 'preview'];
+        var HIDE_LIST2 = ['preview'];
         hideControls(HIDE_LIST1);
         hideControls(HIDE_LIST2);
         
         win.find('edit', true).setVisible(true);
+        win.find('share', true).setVisible(true);        
         
-        if (editor.greeting.voiceLocalId) {
-            win.find('voice').setVisible('true');
-            if (isWeiXin)
-                wx.playVoice({localId: editor.greeting.voiceLocalId});
-        }        
+        playVoice();
     };
-    
+
     var initViewMode = function() {
         console.log('initViewMode()');
         
         // hide editor controls
         var HIDE_LIST1 = ['intro-bkg', 'intro-man', 'group-man', 
-            'camera-wrap', 'record-wrap', 'voice', 'voice-delete'];
-        var HIDE_LIST2 = ['music-prev', 'music-next', 'preview', 'share'];
+            'camera-wrap', 'record-wrap'];
+        var HIDE_LIST2 = ['preview', 'share'];
         hideControls(HIDE_LIST1);
         hideControls(HIDE_LIST2);                
-        win.find('down-anim').setVisible('true');        
+        win.find('down-anim', true).setVisible('true');
+        win.find('replay', true).setVisible('true');
         
         //get param from url
         var manId = getUrlParam('man');
         var bkgId = getUrlParam('bkg');
-        var musicId = getUrlParam('music');
+        var bgMusicId = getUrlParam('bgMusic');
         var voiceServerId = getUrlParam('gvoice');
+        var photoServerId = getUrlParam('gphoto'); //todo: add url param(photoServerId, faceRect)
+
+        var rect = {x:0, y:0, w:0, h:0};
+        rect.x = Number(getUrlParam('fx'));
+        rect.y = Number(getUrlParam('fy'));
+        rect.w = Number(getUrlParam('fw'));
+        rect.h = Number(getUrlParam('fh'));
                 
         if (manId)
             editor.manId = Number(manId);
         if (bkgId)
             editor.bkgId = Number(bkgId);
-        if (musicId)
-            editor.musicId = Number(musicId);
+        if (bgMusicId)
+            editor.bgMusicId = Number(bgMusicId);
         if (voiceServerId)
             editor.greeting.voiceServerId = unescape(voiceServerId);
+        if (photoServerId)
+            editor.photo.imgServerId = unescape(photoServerId);
+        editor.photo.faceRect = rect;
             
         console.log("editor: manId=" + editor.manId + 
                     ", bkgId=" + editor.bkgId + 
-                    ", musicId=" + editor.musicId + 
-                    ", voiceServerId=" + editor.greeting.voiceServerId);
+                    ", bgMusicId=" + editor.bgMusicId + 
+                    ", voiceServerId=" + editor.greeting.voiceServerId + 
+                    ", photoServerId=" + editor.photo.imgServerId + 
+                    ", fx=" + editor.photo.faceRect.x + 
+                    ", fy=" + editor.photo.faceRect.y + 
+                    ", fw=" + editor.photo.faceRect.w + 
+                    ", fh=" + editor.photo.faceRect.h);
         
         //download wx voice
+        console.log('wx dowload voice start');
         if (editor.greeting.voiceServerId){
-            if (! isWeiXin){
-                editor.greeting.voiceLocalId = "dummyVoiceLocalId";
-                win.find('voice').setVisible('true');
-            }
-            
-            wx.downloadVoice({
-                serverId: editor.greeting.voiceServerId, // 需要下载的音频的服务器端ID，由uploadVoice接口获得
-                isShowProgressTips: 1, // 默认为1，显示进度提示
-                success: function (res) {
-                    editor.greeting.voiceLocalId = res.localId;
-                    win.find('voice').setVisible('true');
-                    wx.playVoice({localId: editor.greeting.voiceLocalId});
+            if (! isWeiXin()){
+                editor.greeting.voiceLocalId = "dummyVoiceLocalId";                
+                playVoice();
+            } else {
+                if (editor.greeting.voiceLocalId) {
+                    playVoice();
+                } else {
+                    wx.downloadVoice({
+                        serverId: editor.greeting.voiceServerId, // 需要下载的音频的服务器端ID，由uploadVoice接口获得
+                        isShowProgressTips: 0, // 默认为1，显示进度提示
+                        success: function (res) {
+                            console.log('wx dowload voice success = ' + res.localId);
+                            editor.greeting.voiceLocalId = res.localId;                    
+                            playVoice();                    
+                        }
+                    }); 
                 }
-            }); 
+            }            
+        }
+
+        //download photo
+        console.log('wx dowload photo start');
+        if (editor.photo.imgServerId) {
+             if (! isWeiXin()) {
+                editor.photo.imgLocalId = editor.photo.imgServerId; 
+                clipFaceFromPhoto(editor.photo.imgLocalId, editor.photo.faceRect);
+             } else {
+                if (editor.photo.imgLocalId) {
+                    clipFaceFromPhoto(editor.photo.imgLocalId, editor.photo.faceRect);
+                } else {
+                    wx.downloadImage({
+                        serverId: editor.photo.imgServerId, // 需要下载的图片的服务器端ID，由uploadImage接口获得
+                        isShowProgressTips: 1, // 默认为1，显示进度提示
+                        success: function (res) {
+                            console.log('wx dowload photo success = ' + res.localId);
+                            editor.photo.imgLocalId = res.localId; // 返回图片下载后的本地ID
+                            clipFaceFromPhoto(editor.photo.imgLocalId, editor.photo.faceRect);
+                        }
+                    });
+                }
+             }            
         }
     };
+
+    this.testInitViewMode = initViewMode;
     
     var showMan = function() {
         console.log('showMan()');
-        var mama = win.find('man-mama-img');
+        var mama = win.find('man-mama-img');          
         
-        for (var i=0; i<MAN_LIST.length; i++) {            
-            win.find(MAN_LIST[i]+'-img').setPosition(mama.x, mama.y).setVisible(i === editor.manId);
+        for (var i=0; i<MAN_LIST.length; i++) {
+            var man = win.find(MAN_LIST[i]+'-img');
+            var manX = mama.x + (mama.getWidth() - man.getWidth());  //以妈妈为准，靠右下对齐
+            var manY = mama.y + (mama.getHeight() - man.getHeight());
+            man.setPosition(manX, manY).setVisible(i === editor.manId);
         }
 
-        if (editor.head.clipCanvas) {
-            changeHead(editor.head.clipCanvas);
+        if (editor.photo.faceCanvas) {
+            ggChangeFace(editor.photo.faceCanvas);
         }
     };
 
     var removeUrlParams = function (url, paramList){
         for (var i=0; i < paramList.length; i++) {
-            var re = eval('/('+ paramList[i] + '=)([^&]*)/gi');
+            var re = eval('/('+ paramList[i] + '=)([^]*)/gi');
             url = url.replace(re, '');
             console.log('after step ' + i + ', ' + 'url = ' + url);
         }
@@ -144,8 +284,8 @@ function EditorWinController(win) {
     var getWeixinShareUrl = function() {
         //remove url param
         var url = String(window.location);
-        console.log('original url = ' + url);        
-        url = removeUrlParams(url, ['&bkg', '&music', '&man', '&gvoice']);
+        console.log('original url = ' + url);
+        url = removeUrlParams(url, ['&bkg', '&bgMusic', '&man', '&gvoice', 'gphoto', 'fx', 'fy', 'fw', 'fh']);
         console.log('removed, url = ' + url);
 
         editor.bkgId = win.find('bkg-list').getCurrent();
@@ -153,9 +293,14 @@ function EditorWinController(win) {
         //append url param
         url = url + 
                 '&man=' + editor.manId + 
-                '&music=' + editor.musicId + 
+                '&bgMusic=' + editor.bgMusicId + 
                 '&bkg=' + editor.bkgId + 
-                '&gvoice=' + escape(editor.greeting.voiceServerId);
+                '&gvoice=' + escape(editor.greeting.voiceServerId) + 
+                '&gphoto=' + escape(editor.photo.imgServerId) + 
+                '&fx=' + Math.floor(editor.photo.faceRect.x) +  
+                '&fy=' + Math.floor(editor.photo.faceRect.y) +  
+                '&fw=' + Math.floor(editor.photo.faceRect.w) +  
+                '&fh=' + Math.floor(editor.photo.faceRect.h);
         console.log('appended, url = ' + url);
         return url;
     };
@@ -189,29 +334,31 @@ function EditorWinController(win) {
         });        
     };
 
-    this.initWin = function(initData, editorSave) {
-        if (editorSave) {
-            editor = editorSave;
-        }        
+    this.initWin = function(initData) {                
         console.log('initWin(), manId=' + editor.manId + ', bkgId=' + editor.bkgId);
         
-        win.resetGame();
+        //win.resetGame();
         
-        if (initData === 'mode=view'){
-            mode = MODE_VIEW;
-            initViewMode();
-        } else if (initData === 'mode=preview'){
-            mode = MODE_PREVIVIEW;
+        if (initData === 'mode=preview'){
+            mode = MODE_PREVIEW;
             initPreviewMode();
+            win.openWindow('dlg-door');
         } else if (initData === 'mode=editor'){
             mode = MODE_EDITOR;
             initEditorMode();
-        } else {
-            alert('error mode');
+        } else { //default is view mode
+            mode = MODE_VIEW;
+            initViewMode();
+            win.openWindow('dlg-door');
         }
         
         showMan();
         win.find('bkg-list').setCurrent(editor.bkgId);
+
+        if (mode === MODE_VIEW || mode === MODE_PREVIEW) {            
+            ss.initSpriteStinger("snowman");
+            ss.switchStinger(win, 0);
+        }
     };
     
     this.manBarOnClick = function(button) {
@@ -231,56 +378,58 @@ function EditorWinController(win) {
         if (mode !== MODE_EDITOR) return;
         win.find('intro-man').setVisible(false);
         editor.manId = (editor.manId + 1) % MAN_LIST.length;
-        showMan();        
+        showMan();
     };
     
-    //deep copy
-    var deepCopy = function(source) {
-        var result={};
-        for (var key in source) {
-            result[key] = typeof source[key]==='object'? deepCopy(source[key]): source[key];
-        }
-        return result;
-    };
-
     this.onClickPreview = function() {
         console.log('onClickPreview()');
 
         initWeixinShare();
-        
-        //save editor state
-        editor.bkgId = win.find('bkg-list').getCurrent();
-        window.myEditorSave = editor; //save status to global
-                
-        win.openWindow('win-door', null, true, 'mode=preview');
+        controller.initWin('mode=preview');
     };
 
     this.onClickShare = function() {
         console.log('onClickShare()');
         initWeixinShare();
-        //win.openWindow('win-tip-share', null, true, 'mode=preview');
+        win.openWindow('win-share-guide');
+    };
+
+    this.onClickReplay = function() {
+        console.log('onClickReplay()');
+        controller.initWin('mode=view');
     };
     
     this.onClickBackEdit = function() {
-        controller.initWin('mode=editor', null);
+        controller.initWin('mode=editor');
+    };
+
+    this.onClickSnowman = function() {
+        if (mode !== MODE_EDITOR)
+            ss.switchStinger(win);
     };
     
     this.onClickRecord = function() {
-        win.openWindow('win-record', function(retData) {
-            console.log("record window retData = " + retData);
-            if (! retData)
-                return;
-            if (! isWeiXin()){
-                editor.greeting.voiceLocalId = retData;
-                editor.greeting.voiceServerId = "dummyVoiceSererId";
-                win.find('voice', true).setVisible(true);
-                win.find('voice-delete', true).setVisible(true);
-                return;
-            }                
+        stopMusic();
 
-            editor.greeting.voiceLocalId = retData;
-            win.find('voice', true).setVisible(true);
-            win.find('voice-delete', true).setVisible(true);
+        win.openWindow('win-record', function(resId) {
+            playMusic();
+
+            console.log("record window resId = " + resId);
+            if (! resId) { // record deleted
+                editor.greeting.voiceLocalId = '';
+                editor.greeting.voiceServerId = '';
+                return;
+            } else if (editor.greeting.voiceLocalId === resId) { // not changed
+                return;
+            }
+
+            if (! isWeiXin()){
+                editor.greeting.voiceLocalId = resId;
+                editor.greeting.voiceServerId = "dummyVoiceSererId";                
+                return;
+            }
+
+            editor.greeting.voiceLocalId = resId;
             console.log('begin upload voice');
             
             wx.uploadVoice({
@@ -291,39 +440,21 @@ function EditorWinController(win) {
                     console.log('recServerId = ' + recServerId);
                 }
             });            
-        }, false);
-    };
-    
-    var isPlayingVoice = false;
-    this.onClickPlayVoice = function() {
-        if (! isWeiXin())
-            return;
-        if (! editor.greeting.voiceLocalId || isPlayingVoice)
-            return;
-        console.log('editor.greeting.voiceLocalId = ' + editor.greeting.voiceLocalId);
-        wx.playVoice({localId: editor.greeting.voiceLocalId});
-        isPlayingVoice = true;
-        wx.onVoicePlayEnd({
-            success: function (res) {
-                isPlayingVoice = false;
-            }
-        });
-    };
-    
-    this.onClickDeleteVoice = function() {
-        editor.greeting.voiceLocalId = '';
-        editor.greeting.voiceServerId = '';
-        win.find('voice', true).setVisible(false);
-        win.find('voice-delete', true).setVisible(false);
-    };
+        }, false, editor.greeting.voiceLocalId);
+    };  
 
-    var changeHead = function(clipCanvas) {
-        console.log('changeHead()');
+    var ggChangeFace = function(faceCanvas) {
+        console.log('ggChangeFace()');
         var ggWrapName = MAN_LIST[editor.manId] + '-img';
         var robot = win.find(ggWrapName).find('gg');
         var r = robot.getSlotRect("transparent-face");
+        if (! r) {
+            isFaceDelayChange = true;
+            return;
+        }
+
         var rect = {x:0, y:0, width:r.width, height:r.height};
-        var ctx = clipCanvas.getContext("2d");
+        var ctx = faceCanvas.getContext("2d");
         ctx.scale(0.1, 0.1);
         ctx.restore();
         var canvas = document.createElement("canvas");
@@ -332,35 +463,95 @@ function EditorWinController(win) {
         ctx = canvas.getContext("2d");
         ctx.clearRect(0, 0, r.width, r.height);
         ctx.save();
-        ctx.drawImage(clipCanvas, 0, 0, clipCanvas.width, clipCanvas.height, 0, 0, r.width, r.height);
+        ctx.drawImage(faceCanvas, 0, 0, faceCanvas.width, faceCanvas.height, 0, 0, r.width, r.height);
         ctx.restore();
         robot.replaceSlotImage("transparent-face", canvas, rect);
     };
 
     //first download image by imageServerId
-    var getHeadImageClipCanvas = function(imageLocalId, rect) {
-        console.log('getNewclipCanvas()');
-        var ovalImage = clipOvalImage(imageLocalId, rect, null);
-        return ovalImage;
+    var clipFaceFromPhoto = function(imgLocalId, faceRect) {
+        console.log('clipFaceFromPhoto()');
+
+        var img = new Image();
+        /*
+        if (img.complete) {
+            console.log('clipFaceFromPhoto() img complete');
+            var ovalImage = clipOvalImage(img, faceRect, null);
+            if (! ovalImage) return;
+            editor.photo.faceCanvas = ovalImage;
+            ggChangeFace(editor.photo.faceCanvas);
+        } else {
+        */
+        img.onload = function () {
+            console.log('clipFaceFromPhoto() img onload()');
+            var ovalImage = clipOvalImage(img, faceRect, null);
+            if (! ovalImage) return;
+            editor.photo.faceCanvas = ovalImage;
+            ggChangeFace(editor.photo.faceCanvas);
+            img.onload = null;
+        };
+        img.onerror = function (e) {
+            console.log('clipFaceFromPhoto() img onerror()');
+            console.log(JSON.stringify(e));
+        };
+        img.src = imgLocalId;
     };
 
     this.onClickCamera = function() {
-        win.openWindow("win-replace-head", 
+        win.openWindow("win-replace-face", 
             function (retData) {
                 if (retData && retData.canvas) {
-                    console.log('changeHead() begin');
-                    editor.head.clipCanvas = retData.canvas;
-                    changeHead(retData.canvas);
+
+                    // 上传头像，朋友收到贺卡时再下载和换头
+                    if (retData.imageId) {
+                        editor.photo.imgLocalId = retData.imageId;
+
+                        wx.uploadImage({
+                            localId: editor.photo.imgLocalId, // 需要上传的图片的本地ID，由chooseImage接口获得
+                            isShowProgressTips: 1, // 默认为1，显示进度提示
+                            success: function (res) {
+                                //editor.photo.imgLocalId = res.serverId; // 返回图片的服务器端ID
+                                editor.photo.imgServerId = res.serverId; // 返回图片的服务器端ID
+                            }
+                        });
+                    }
+
+                    editor.photo.faceCanvas = retData.canvas;
+                    editor.photo.faceRect = retData.rect;
+                    ggChangeFace(retData.canvas);
                 }
             }, false, initData);
     };
+    
+    this.ggOnLoadDone = function(gg) {
+        console.log('ggOnLoadDone(), parent = ' + gg.getParent().name);
+
+        var curName = MAN_LIST[editor.manId] + '-img';
+        if (gg.getParent().name != curName) {
+            return;
+        }
+
+        if (editor.photo.faceCanvas && isFaceDelayChange) {
+            ggChangeFace(editor.photo.faceCanvas);
+            isFaceDelayChange = false; // only once
+        }
+    };
+
+    this.onSwipeUp = function() {
+        console.log('onSwipeUp()');
+        if (mode === MODE_VIEW) {
+            win.openWindow('win-logo', null, true);
+        }
+    };
 }
 
-function CreateEditorWinController(win, initData) {
+function CreateEditorWinController(win) {
     console.log('CreateEditorWinController()');
-    win.controller = new EditorWinController(win);    
-    win.controller.initWin(initData, window.myEditorSave);
+    win.controller = new EditorWinController(win); 
+    //console.log = win.find('log').setText;
+    win.controller.initWin(initData);
     return win.controller;
 }
 
-CreateEditorWinController(this, initData);
+CreateEditorWinController(this);
+
