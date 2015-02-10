@@ -98,18 +98,16 @@ function EditorWinController(win) {
         else
             return null;
     };
-    
-    var initEditorMode = function() {
-        var HIDE_LIST = ['baozhu-left', 'baozhu-right', 'lizhi-l1', 'lizhi-l2', 'lizhi-r1', 'lizhi-r2'];
-        hideControls(HIDE_LIST);
-
-        console.log('initEditorMode()');
-        win.find('bkg-list').setEnable(true);        
-    };
-    
+        
     var hideControls = function(ctrList) {
         for (var i=0; i <ctrList.length; i++) {
             win.find(ctrList[i], true).setVisible(false);
+        }
+    };
+
+    var showControls = function(ctrList) {
+        for (var i=0; i <ctrList.length; i++) {
+            win.find(ctrList[i], true).setVisible(true);
         }
     };
 
@@ -144,39 +142,92 @@ function EditorWinController(win) {
         setTimeout(playVoiceDelayCallback, 2000);
     };
     
+    var wxDownloadRes = function() {
+        console.log('wxDownloadRes()');
+
+        if (editor.greeting.voiceServerId){
+            if (! isWeiXin()){
+                editor.greeting.voiceLocalId = "dummyVoiceLocalId";                
+                playVoice();
+            } else {
+                if (editor.greeting.voiceLocalId) {
+                    playVoice();
+                } else {
+                    console.log('wx dowload voice start');
+                    wx.downloadVoice({
+                        serverId: editor.greeting.voiceServerId, // 需要下载的音频的服务器端ID，由uploadVoice接口获得
+                        isShowProgressTips: 0, // 默认为1，显示进度提示
+                        fail: function (res) {console.log('wx dowload voice fail = ' + JSON.stringify(res));},
+                        complete: function (res) {console.log('wx dowload voice complete' + JSON.stringify(res));},
+                        success: function (res) {
+                            console.log('wx dowload voice success = ' + res.localId);
+                            editor.greeting.voiceLocalId = res.localId;                    
+                            playVoice();                    
+                        }
+                    }); 
+                }
+            }            
+        }
+                
+        if (editor.photo.imgServerId) {
+             if (! isWeiXin()) {
+                editor.photo.imgLocalId = editor.photo.imgServerId; 
+                clipFaceFromPhoto(editor.photo.imgLocalId, editor.photo.faceRect);
+             } else {
+                if (editor.photo.imgLocalId) {
+                    clipFaceFromPhoto(editor.photo.imgLocalId, editor.photo.faceRect);
+                } else {
+                    console.log('wx dowload photo start');
+                    wx.downloadImage({
+                        serverId: editor.photo.imgServerId, // 需要下载的图片的服务器端ID，由uploadImage接口获得
+                        isShowProgressTips: 1, // 默认为1，显示进度提示
+                        fail: function (res) {console.log('wx dowload image fail = ' + JSON.stringify(res));},
+                        complete: function (res) {console.log('wx dowload image complete' + JSON.stringify(res));},
+                        success: function (res) {
+                            console.log('wx dowload photo success = ' + res.localId);
+                            editor.photo.imgLocalId = res.localId; // 返回图片下载后的本地ID
+                            clipFaceFromPhoto(editor.photo.imgLocalId, editor.photo.faceRect);
+                        }
+                    });
+                }
+             }            
+        }
+    };
+
+    //status transform: VIEW -> EDITOR <> PREVIEW
+    var EDITOR_CTRS = ['intro-bkg', 'intro-man', 'group-man', 'camera-wrap', 'record-wrap', 'preview'];
+    var BAOZHU_CTRS = ['baozhu-left', 'baozhu-right', 'lizhi-l1', 'lizhi-l2', 'lizhi-r1', 'lizhi-r2'];
+    var VIEW_CTRS = ['down-anim', 'replay'];
+    var PREVIEW_CTRS = ['edit', 'share'];
+
     var initPreviewMode = function() {
-        console.log('initPreviewMode()');
-        
-        // hide editor controls
-        var HIDE_LIST1 = ['intro-bkg', 'intro-man', 'group-man', 'camera-wrap', 'record-wrap'];
-        var HIDE_LIST2 = ['preview'];
-        hideControls(HIDE_LIST1);
-        hideControls(HIDE_LIST2);
-        
-        win.find('edit', true).setVisible(true);
-        win.find('share', true).setVisible(true);        
-        
+        console.log('initPreviewMode()');        
+        hideControls(EDITOR_CTRS);
+        showControls(PREVIEW_CTRS);
+        showControls(BAOZHU_CTRS);
         playVoice();
+    };
+
+    var initEditorMode = function() {
+        console.log('initEditorMode()');
+        hideControls(VIEW_CTRS);
+        hideControls(PREVIEW_CTRS);
+        hideControls(BAOZHU_CTRS);
+        showControls(EDITOR_CTRS);
+        win.find('bkg-list').setEnable(true);
     };
 
     var initViewMode = function() {
         console.log('initViewMode()');
-        
-        // hide editor controls
-        var HIDE_LIST1 = ['intro-bkg', 'intro-man', 'group-man', 
-            'camera-wrap', 'record-wrap'];
-        var HIDE_LIST2 = ['preview', 'share'];
-        hideControls(HIDE_LIST1);
-        hideControls(HIDE_LIST2);                
-        win.find('down-anim', true).setVisible('true');
-        win.find('replay', true).setVisible('true');
+        hideControls(EDITOR_CTRS);        
+        showControls(VIEW_CTRS);
         
         //get param from url
         var manId = getUrlParam('man');
         var bkgId = getUrlParam('bkg');
         var bgMusicId = getUrlParam('bgMusic');
         var voiceServerId = getUrlParam('gvoice');
-        var photoServerId = getUrlParam('gphoto'); //todo: add url param(photoServerId, faceRect)
+        var photoServerId = getUrlParam('gphoto');
 
         var rect = {x:0, y:0, w:0, h:0};
         rect.x = Number(getUrlParam('fx'));
@@ -206,58 +257,23 @@ function EditorWinController(win) {
                     ", fw=" + editor.photo.faceRect.w + 
                     ", fh=" + editor.photo.faceRect.h);
         
-        //download wx voice
-        console.log('wx dowload voice start');
-        if (editor.greeting.voiceServerId){
-            if (! isWeiXin()){
-                editor.greeting.voiceLocalId = "dummyVoiceLocalId";                
-                playVoice();
-            } else {
-                if (editor.greeting.voiceLocalId) {
-                    playVoice();
-                } else {
-                    wx.downloadVoice({
-                        serverId: editor.greeting.voiceServerId, // 需要下载的音频的服务器端ID，由uploadVoice接口获得
-                        isShowProgressTips: 0, // 默认为1，显示进度提示
-                        success: function (res) {
-                            console.log('wx dowload voice success = ' + res.localId);
-                            editor.greeting.voiceLocalId = res.localId;                    
-                            playVoice();                    
-                        }
-                    }); 
-                }
-            }            
-        }
-
-        //download photo
-        console.log('wx dowload photo start');
-        if (editor.photo.imgServerId) {
-             if (! isWeiXin()) {
-                editor.photo.imgLocalId = editor.photo.imgServerId; 
-                clipFaceFromPhoto(editor.photo.imgLocalId, editor.photo.faceRect);
-             } else {
-                if (editor.photo.imgLocalId) {
-                    clipFaceFromPhoto(editor.photo.imgLocalId, editor.photo.faceRect);
-                } else {
-                    wx.downloadImage({
-                        serverId: editor.photo.imgServerId, // 需要下载的图片的服务器端ID，由uploadImage接口获得
-                        isShowProgressTips: 1, // 默认为1，显示进度提示
-                        success: function (res) {
-                            console.log('wx dowload photo success = ' + res.localId);
-                            editor.photo.imgLocalId = res.localId; // 返回图片下载后的本地ID
-                            clipFaceFromPhoto(editor.photo.imgLocalId, editor.photo.faceRect);
-                        }
-                    });
-                }
-             }            
-        }
-    };
-
-    this.testInitViewMode = initViewMode;
+        if (! isWeiXin()) {
+            wxDownloadRes();
+        } else {            
+            console.log('register wx.ready()');
+            wx.ready(function () {
+                console.log("initViewMode() wx.ready");
+                wxDownloadRes();
+            });
+            wx.error(function (res) {
+               console.log("initViewMode() wx.error");
+            });        
+        }        
+    };    
     
     var showMan = function() {
         console.log('showMan()');
-        var mama = win.find('man-mama-img');          
+        var mama = win.find('man-mama-img');
         
         for (var i=0; i<MAN_LIST.length; i++) {
             var man = win.find(MAN_LIST[i]+'-img');
@@ -335,10 +351,8 @@ function EditorWinController(win) {
     };
 
     this.initWin = function(initData) {                
-        console.log('initWin(), manId=' + editor.manId + ', bkgId=' + editor.bkgId);
-        
-        //win.resetGame();
-        
+        console.log('initWin(), manId=' + editor.manId + ', bkgId=' + editor.bkgId);        
+
         if (initData === 'mode=preview'){
             mode = MODE_PREVIEW;
             initPreviewMode();
@@ -470,31 +484,31 @@ function EditorWinController(win) {
 
     //first download image by imageServerId
     var clipFaceFromPhoto = function(imgLocalId, faceRect) {
-        console.log('clipFaceFromPhoto()');
+        var loadRetryTimes = 0;
+        var clipCallback = function() {
+            loadRetryTimes += 1;
+            console.log('clipCallback(), loadRetryTimes = ' + loadRetryTimes);
 
-        var img = new Image();
-        /*
-        if (img.complete) {
-            console.log('clipFaceFromPhoto() img complete');
-            var ovalImage = clipOvalImage(img, faceRect, null);
-            if (! ovalImage) return;
-            editor.photo.faceCanvas = ovalImage;
-            ggChangeFace(editor.photo.faceCanvas);
-        } else {
-        */
-        img.onload = function () {
-            console.log('clipFaceFromPhoto() img onload()');
-            var ovalImage = clipOvalImage(img, faceRect, null);
-            if (! ovalImage) return;
-            editor.photo.faceCanvas = ovalImage;
-            ggChangeFace(editor.photo.faceCanvas);
-            img.onload = null;
+            var img = new Image();
+            img.onload = function () {
+                console.log('wx img onload');
+                var ovalImage = clipOvalImage(img, faceRect, null);
+                if (! ovalImage) return;
+                editor.photo.faceCanvas = ovalImage;
+                ggChangeFace(editor.photo.faceCanvas);
+                img.onload = null;
+            };
+            img.onerror = function (e) {
+                console.log('wx img onerror');
+                //console.log(JSON.stringify(e));
+                //if (loadRetryTimes < 10) 
+                setTimeout(clipCallback, 1000);
+            };
+            img.src = imgLocalId;
         };
-        img.onerror = function (e) {
-            console.log('clipFaceFromPhoto() img onerror()');
-            console.log(JSON.stringify(e));
-        };
-        img.src = imgLocalId;
+
+        console.log('clipFaceFromPhoto()');
+        setTimeout(clipCallback, 1000);
     };
 
     this.onClickCamera = function() {
