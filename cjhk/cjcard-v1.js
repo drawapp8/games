@@ -141,57 +141,73 @@ function EditorWinController(win) {
         console.log('playVoice() timer setted');
         setTimeout(playVoiceDelayCallback, 2000);
     };
+
+    var isDownloadingVoice = false; // 经测试声音和图片同时下载，前一个会被后一个打断；改为先下载声音再下载图片
+    var wxDowloadVoice = function() {
+        console.log('wxDowloadVoice()');
+        if (! editor.greeting.voiceServerId) return;
+        if (! isWeiXin()) {
+            editor.greeting.voiceLocalId = "dummyVoiceLocalId";                
+            playVoice();
+        } else {
+            if (editor.greeting.voiceLocalId) {
+                playVoice();
+            } else {
+                console.log('wx dowload voice start');
+                isDownloadingVoice = true;
+                wx.downloadVoice({
+                    serverId: editor.greeting.voiceServerId, // 需要下载的音频的服务器端ID，由uploadVoice接口获得
+                    isShowProgressTips: 0, // 默认为1，显示进度提示
+                    fail: function (res) {console.log('wx dowload voice fail = ' + JSON.stringify(res));},
+                    complete: function (res) {
+                        console.log('wx dowload voice complete' + JSON.stringify(res)); 
+                        isDownloadingVoice = false;
+
+                        wxDowloadImage();
+                    },
+                    success: function (res) {
+                        console.log('wx dowload voice success = ' + res.localId);
+                        editor.greeting.voiceLocalId = res.localId;
+                        playVoice();
+                    }
+                }); 
+            }
+        }
+    };
+
+    var wxDowloadImage = function() {
+        console.log('wxDowloadVoice() 1');
+        if (isDownloadingVoice) return; //call in voice download complete callback
+
+        console.log('wxDowloadVoice() 2');
+        if (! editor.photo.imgServerId) return;
+        if (! isWeiXin()) {
+            editor.photo.imgLocalId = editor.photo.imgServerId; 
+            clipFaceFromPhoto(editor.photo.imgLocalId, editor.photo.faceRect);
+        } else {
+            if (editor.photo.imgLocalId) {
+                clipFaceFromPhoto(editor.photo.imgLocalId, editor.photo.faceRect);
+            } else {
+                console.log('wx dowload photo start');
+                wx.downloadImage({
+                    serverId: editor.photo.imgServerId, // 需要下载的图片的服务器端ID，由uploadImage接口获得
+                    isShowProgressTips: 1, // 默认为1，显示进度提示
+                    fail: function (res) {console.log('wx dowload image fail = ' + JSON.stringify(res));},
+                    complete: function (res) {console.log('wx dowload image complete' + JSON.stringify(res));},
+                    success: function (res) {
+                        console.log('wx dowload photo success = ' + res.localId);
+                        editor.photo.imgLocalId = res.localId; // 返回图片下载后的本地ID
+                        clipFaceFromPhoto(editor.photo.imgLocalId, editor.photo.faceRect);
+                    }
+                });
+            }
+         }
+    };
     
     var wxDownloadRes = function() {
         console.log('wxDownloadRes()');
-
-        if (editor.greeting.voiceServerId){
-            if (! isWeiXin()){
-                editor.greeting.voiceLocalId = "dummyVoiceLocalId";                
-                playVoice();
-            } else {
-                if (editor.greeting.voiceLocalId) {
-                    playVoice();
-                } else {
-                    console.log('wx dowload voice start');
-                    wx.downloadVoice({
-                        serverId: editor.greeting.voiceServerId, // 需要下载的音频的服务器端ID，由uploadVoice接口获得
-                        isShowProgressTips: 0, // 默认为1，显示进度提示
-                        fail: function (res) {console.log('wx dowload voice fail = ' + JSON.stringify(res));},
-                        complete: function (res) {console.log('wx dowload voice complete' + JSON.stringify(res));},
-                        success: function (res) {
-                            console.log('wx dowload voice success = ' + res.localId);
-                            editor.greeting.voiceLocalId = res.localId;                    
-                            playVoice();                    
-                        }
-                    }); 
-                }
-            }            
-        }
-                
-        if (editor.photo.imgServerId) {
-             if (! isWeiXin()) {
-                editor.photo.imgLocalId = editor.photo.imgServerId; 
-                clipFaceFromPhoto(editor.photo.imgLocalId, editor.photo.faceRect);
-             } else {
-                if (editor.photo.imgLocalId) {
-                    clipFaceFromPhoto(editor.photo.imgLocalId, editor.photo.faceRect);
-                } else {
-                    console.log('wx dowload photo start');
-                    wx.downloadImage({
-                        serverId: editor.photo.imgServerId, // 需要下载的图片的服务器端ID，由uploadImage接口获得
-                        isShowProgressTips: 1, // 默认为1，显示进度提示
-                        fail: function (res) {console.log('wx dowload image fail = ' + JSON.stringify(res));},
-                        complete: function (res) {console.log('wx dowload image complete' + JSON.stringify(res));},
-                        success: function (res) {
-                            console.log('wx dowload photo success = ' + res.localId);
-                            editor.photo.imgLocalId = res.localId; // 返回图片下载后的本地ID
-                            clipFaceFromPhoto(editor.photo.imgLocalId, editor.photo.faceRect);
-                        }
-                    });
-                }
-             }            
-        }
+        wxDowloadVoice();
+        wxDowloadImage();
     };
 
     //status transform: VIEW -> EDITOR <> PREVIEW
@@ -246,6 +262,9 @@ function EditorWinController(win) {
         if (photoServerId)
             editor.photo.imgServerId = unescape(photoServerId);
         editor.photo.faceRect = rect;
+        //test
+        console.log('set test id');
+        editor.photo.imgServerId = 'MFlrNwcBfyXKpSF6SpheeVDR4KQfe_llTZuCoeVDlG_Ko1PNWAw3qRrBuNIJ0fvc';
             
         console.log("editor: manId=" + editor.manId + 
                     ", bkgId=" + editor.bkgId + 
@@ -503,8 +522,16 @@ function EditorWinController(win) {
                 //console.log(JSON.stringify(e));
                 //if (loadRetryTimes < 10) 
                 setTimeout(clipCallback, 1000);
-            };
+            };            
             img.src = imgLocalId;
+            if (img.complete){
+                console.log('wx img complete');
+                var ovalImage = clipOvalImage(img, faceRect, null);
+                if (! ovalImage) return;
+                editor.photo.faceCanvas = ovalImage;
+                ggChangeFace(editor.photo.faceCanvas);
+                img.onload = null;
+            }
         };
 
         console.log('clipFaceFromPhoto()');
