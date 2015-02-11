@@ -1,6 +1,5 @@
 //todo: 
 //1.url add image rotate
-//2.change oh to ow
 
 // -- egg --
 function Stinger() {
@@ -525,7 +524,7 @@ function EditorWinController(win) {
                 }
                 var ow = editor.photo.origWidth;
                 if(ow > 0 && ow != img.width) {
-                    var factor = ow / img.width;
+                    var factor = img.width / ow;
                     faceRect.x *= factor;
                     faceRect.y *= factor;
                     faceRect.w *= factor;
