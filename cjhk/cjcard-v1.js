@@ -176,10 +176,10 @@ function EditorWinController(win) {
     };
 
     var wxDowloadImage = function() {
-        console.log('wxDowloadVoice() 1');
+        console.log('wxDowloadImage() 1');
         if (isDownloadingVoice) return; //call in voice download complete callback
 
-        console.log('wxDowloadVoice() 2');
+        console.log('wxDowloadImage() 2');
         if (! editor.photo.imgServerId) return;
         if (! isWeiXin()) {
             editor.photo.imgLocalId = editor.photo.imgServerId; 
@@ -250,7 +250,8 @@ function EditorWinController(win) {
         rect.y = Number(getUrlParam('fy'));
         rect.w = Number(getUrlParam('fw'));
         rect.h = Number(getUrlParam('fh'));
-                
+        editor.photo.origWidth = Number(getUrlParam('oh'));
+        
         if (manId)
             editor.manId = Number(manId);
         if (bkgId)
@@ -262,9 +263,11 @@ function EditorWinController(win) {
         if (photoServerId)
             editor.photo.imgServerId = unescape(photoServerId);
         editor.photo.faceRect = rect;
-        //test
-        console.log('set test id');
-        editor.photo.imgServerId = 'MFlrNwcBfyXKpSF6SpheeVDR4KQfe_llTZuCoeVDlG_Ko1PNWAw3qRrBuNIJ0fvc';
+        
+        //if (isWeiXin()) {//test            
+        //    console.log('set test id');
+        //    editor.photo.imgServerId = 'MFlrNwcBfyXKpSF6SpheeVDR4KQfe_llTZuCoeVDlG_Ko1PNWAw3qRrBuNIJ0fvc';
+        //}        
             
         console.log("editor: manId=" + editor.manId + 
                     ", bkgId=" + editor.bkgId + 
@@ -477,11 +480,12 @@ function EditorWinController(win) {
     };  
 
     var ggChangeFace = function(faceCanvas) {
-        console.log('ggChangeFace()');
+        console.log('ggChangeFace() 1');
         var ggWrapName = MAN_LIST[editor.manId] + '-img';
         var robot = win.find(ggWrapName).find('gg');
         var r = robot.getSlotRect("transparent-face");
         if (! r) {
+            console.log('ggChangeFace() 2');
             isFaceDelayChange = true;
             return;
         }
@@ -498,7 +502,11 @@ function EditorWinController(win) {
         ctx.save();
         ctx.drawImage(faceCanvas, 0, 0, faceCanvas.width, faceCanvas.height, 0, 0, r.width, r.height);
         ctx.restore();
+
+        console.log('ggChangeFace() 3');
+        //robot.replaceSlotImage("transparent-face", canvas, rect);        
         robot.replaceSlotImage("transparent-face", canvas, rect);
+        console.log('ggChangeFace() 4');
     };
 
     //first download image by imageServerId
@@ -519,13 +527,12 @@ function EditorWinController(win) {
             };
             img.onerror = function (e) {
                 console.log('wx img onerror');
-                //console.log(JSON.stringify(e));
+                console.log(JSON.stringify(e));
                 //if (loadRetryTimes < 10) 
-                setTimeout(clipCallback, 1000);
+                //setTimeout(clipCallback, 1000);
             };            
             img.src = imgLocalId;
             if (img.complete){
-                console.log('wx img complete');
                 var ovalImage = clipOvalImage(img, faceRect, null);
                 if (! ovalImage) return;
                 editor.photo.faceCanvas = ovalImage;
