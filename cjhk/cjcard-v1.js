@@ -1,3 +1,7 @@
+//todo: 
+//1.url add image rotate
+//2.change oh to ow
+
 // -- egg --
 function Stinger() {
     this.curIndex = 0;
@@ -73,6 +77,7 @@ function EditorWinController(win) {
         photo: {
             faceCanvas: null,
             faceRect: {x:0, y:0, w:0, h:0},
+            origWidth: 0,
             imgLocalId: "",
             imgServerId: ""
         }
@@ -250,7 +255,7 @@ function EditorWinController(win) {
         rect.y = Number(getUrlParam('fy'));
         rect.w = Number(getUrlParam('fw'));
         rect.h = Number(getUrlParam('fh'));
-        editor.photo.origWidth = Number(getUrlParam('oh'));
+        editor.photo.origWidth = Number(getUrlParam('ow'));
         
         if (manId)
             editor.manId = Number(manId);
@@ -274,6 +279,7 @@ function EditorWinController(win) {
                     ", bgMusicId=" + editor.bgMusicId + 
                     ", voiceServerId=" + editor.greeting.voiceServerId + 
                     ", photoServerId=" + editor.photo.imgServerId + 
+                    ", ow=" + editor.photo.origWidth + 
                     ", fx=" + editor.photo.faceRect.x + 
                     ", fy=" + editor.photo.faceRect.y + 
                     ", fw=" + editor.photo.faceRect.w + 
@@ -335,6 +341,7 @@ function EditorWinController(win) {
                 '&bkg=' + editor.bkgId + 
                 '&gvoice=' + escape(editor.greeting.voiceServerId) + 
                 '&gphoto=' + escape(editor.photo.imgServerId) + 
+                '&ow=' + Math.floor(editor.photo.origWidth) +
                 '&fx=' + Math.floor(editor.photo.faceRect.x) +  
                 '&fy=' + Math.floor(editor.photo.faceRect.y) +  
                 '&fw=' + Math.floor(editor.photo.faceRect.w) +  
@@ -480,33 +487,24 @@ function EditorWinController(win) {
     };  
 
     var ggChangeFace = function(faceCanvas) {
-        console.log('ggChangeFace() 1');
         var ggWrapName = MAN_LIST[editor.manId] + '-img';
         var robot = win.find(ggWrapName).find('gg');
         var r = robot.getSlotRect("transparent-face");
         if (! r) {
-            console.log('ggChangeFace() 2');
             isFaceDelayChange = true;
             return;
         }
-
+        
         var rect = {x:0, y:0, width:r.width, height:r.height};
-        var ctx = faceCanvas.getContext("2d");
-        ctx.scale(0.1, 0.1);
-        ctx.restore();
         var canvas = document.createElement("canvas");
         canvas.width = r.width;
         canvas.height = r.height;
-        ctx = canvas.getContext("2d");
+        var ctx = canvas.getContext("2d");
         ctx.clearRect(0, 0, r.width, r.height);
         ctx.save();
         ctx.drawImage(faceCanvas, 0, 0, faceCanvas.width, faceCanvas.height, 0, 0, r.width, r.height);
         ctx.restore();
-
-        console.log('ggChangeFace() 3');
-        //robot.replaceSlotImage("transparent-face", canvas, rect);        
         robot.replaceSlotImage("transparent-face", canvas, rect);
-        console.log('ggChangeFace() 4');
     };
 
     //first download image by imageServerId
@@ -519,8 +517,23 @@ function EditorWinController(win) {
             var img = new Image();
             img.onload = function () {
                 console.log('wx img onload');
+                if(!faceRect.w) {
+                    faceRect.w = img.width;
+                } 
+                if(!faceRect.h) {
+                    faceRect.h = img.height;
+                }
+                var ow = editor.photo.origWidth;
+                if(ow > 0 && ow != img.width) {
+                    var factor = ow / img.width;
+                    faceRect.x *= factor;
+                    faceRect.y *= factor;
+                    faceRect.w *= factor;
+                    faceRect.h *= factor;
+                }
                 var ovalImage = clipOvalImage(img, faceRect, null);
                 if (! ovalImage) return;
+                
                 editor.photo.faceCanvas = ovalImage;
                 ggChangeFace(editor.photo.faceCanvas);
                 img.onload = null;
@@ -533,11 +546,7 @@ function EditorWinController(win) {
             };            
             img.src = imgLocalId;
             if (img.complete){
-                var ovalImage = clipOvalImage(img, faceRect, null);
-                if (! ovalImage) return;
-                editor.photo.faceCanvas = ovalImage;
-                ggChangeFace(editor.photo.faceCanvas);
-                img.onload = null;
+                console.log('wx img compelte!!');
             }
         };
 
@@ -566,6 +575,7 @@ function EditorWinController(win) {
 
                     editor.photo.faceCanvas = retData.canvas;
                     editor.photo.faceRect = retData.rect;
+                    editor.photo.origWidth = retData.origWidth;
                     ggChangeFace(retData.canvas);
                 }
             }, false, initData);
