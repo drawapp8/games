@@ -77,6 +77,7 @@ function EditorWinController(win) {
             faceCanvas: null,
             faceRect: {x:0, y:0, w:0, h:0},
             origWidth: 0,
+            origRotation: 0,
             imgLocalId: "",
             imgServerId: ""
         }
@@ -255,6 +256,8 @@ function EditorWinController(win) {
         rect.w = Number(getUrlParam('fw'));
         rect.h = Number(getUrlParam('fh'));
         editor.photo.origWidth = Number(getUrlParam('ow'));
+        editor.photo.origRotation = Number(getUrlParam('or'));
+
         
         if (manId)
             editor.manId = Number(manId);
@@ -279,6 +282,7 @@ function EditorWinController(win) {
                     ", voiceServerId=" + editor.greeting.voiceServerId + 
                     ", photoServerId=" + editor.photo.imgServerId + 
                     ", ow=" + editor.photo.origWidth + 
+                    ", or=" + editor.photo.origRotation +
                     ", fx=" + editor.photo.faceRect.x + 
                     ", fy=" + editor.photo.faceRect.y + 
                     ", fw=" + editor.photo.faceRect.w + 
@@ -341,6 +345,7 @@ function EditorWinController(win) {
                 '&gvoice=' + escape(editor.greeting.voiceServerId) + 
                 '&gphoto=' + escape(editor.photo.imgServerId) + 
                 '&ow=' + Math.floor(editor.photo.origWidth) +
+                '&or=' + Math.floor(editor.photo.origRotation) + 
                 '&fx=' + Math.floor(editor.photo.faceRect.x) +  
                 '&fy=' + Math.floor(editor.photo.faceRect.y) +  
                 '&fw=' + Math.floor(editor.photo.faceRect.w) +  
@@ -501,8 +506,12 @@ function EditorWinController(win) {
         var ctx = canvas.getContext("2d");
         ctx.clearRect(0, 0, r.width, r.height);
         ctx.save();
-        ctx.drawImage(faceCanvas, 0, 0, faceCanvas.width, faceCanvas.height, 0, 0, r.width, r.height);
+        ctx.translate(canvas.width * 0.5, canvas.height * 0.5);
+        ctx.rotate(editor.photo.origRotation * Math.PI / 180);
+        ctx.drawImage(faceCanvas, 0, 0, faceCanvas.width, faceCanvas.height, 
+                canvas.width * -0.5,canvas.height * -0.5 , canvas.width, canvas.height);
         ctx.restore();
+
         robot.replaceSlotImage("transparent-face", canvas, rect);
     };
 
@@ -575,6 +584,7 @@ function EditorWinController(win) {
                     editor.photo.faceCanvas = retData.canvas;
                     editor.photo.faceRect = retData.rect;
                     editor.photo.origWidth = retData.origWidth;
+                    editor.photo.origRotation = 180 * retData.rotation / Math.PI;
                     ggChangeFace(retData.canvas);
                 }
             }, false, initData);
