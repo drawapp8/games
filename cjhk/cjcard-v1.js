@@ -58,8 +58,7 @@ function EditorWinController(win) {
     var MODE_PREVIEW = 1;
     var MODE_VIEW = 2;
 
-    //shucai
-    var bgMusic_LIST = ["01.mp3", "03.mp3", "04.mp3"];
+    //shucai    
     var MAN_LIST = ['man-mama', 'man-baba', 'man-boy', 'man-girl', 'man-gfa', 'man-gma'];
     
     var controller = this;
@@ -69,7 +68,10 @@ function EditorWinController(win) {
         manId: 0,
         bkgId: 0,
         greeting: {
-            //text: "",
+            text: {
+                title: '2015春节贺卡',
+                desc: '喜气洋洋祝福来'
+            },
             voiceLocalId: "",
             voiceServerId: ""
         },
@@ -84,6 +86,7 @@ function EditorWinController(win) {
     };    
     var isFaceDelayChange = false; //骨骼未加载时换脸会失败，延迟到ggOnLoadDone再换
     var ss = new SpriteStinger(); //random egg
+    var shareUrl = String(window.location);
 
     var playMusic = function() {       
         //if (win.find('ui-sound-Music').getValue()) { //todo: fixme
@@ -216,7 +219,7 @@ function EditorWinController(win) {
     };
 
     //status transform: VIEW -> EDITOR <> PREVIEW
-    var EDITOR_CTRS = ['intro-bkg', 'intro-man', 'group-man', 'camera-wrap', 'record-wrap', 'preview'];
+    var EDITOR_CTRS = ['intro-rec', 'intro-bkg', 'intro-man', 'group-man', 'camera-wrap', 'record-wrap', 'write', 'preview'];
     var BAOZHU_CTRS = ['baozhu-left', 'baozhu-right', 'lizhi-l1', 'lizhi-l2', 'lizhi-r1', 'lizhi-r2'];
     var VIEW_CTRS = ['down-anim', 'replay'];
     var PREVIEW_CTRS = ['edit', 'share'];
@@ -322,23 +325,22 @@ function EditorWinController(win) {
         for (var i=0; i < paramList.length; i++) {
             var re = eval('/('+ paramList[i] + '=)([^]*)/gi');
             url = url.replace(re, '');
-            console.log('after step ' + i + ', ' + 'url = ' + url);
+            //console.log('after step ' + i + ', ' + 'url = ' + url);
         }
 
         return url;
     };
     
-    var getWeixinShareUrl = function() {
-        //remove url param
-        var url = String(window.location);
-        console.log('original url = ' + url);
-        url = removeUrlParams(url, ['&bkg', '&bgMusic', '&man', '&gvoice', 'gphoto', 'fx', 'fy', 'fw', 'fh']);
-        console.log('removed, url = ' + url);
+    var setWeixinShareUrl = function() {
+        //remove url param        
+        //console.log('original url = ' + shareUrl);
+        shareUrl = removeUrlParams(shareUrl, ['&bkg', '&bgMusic', '&man', '&gvoice', 'gphoto', 'fx', 'fy', 'fw', 'fh']);
+        //console.log('removed, url = ' + shareUrl);
 
         editor.bkgId = win.find('bkg-list').getCurrent();
 
         //append url param
-        url = url + 
+        shareUrl = shareUrl + 
                 '&man=' + editor.manId + 
                 '&bgMusic=' + editor.bgMusicId + 
                 '&bkg=' + editor.bkgId + 
@@ -350,35 +352,35 @@ function EditorWinController(win) {
                 '&fy=' + Math.floor(editor.photo.faceRect.y) +  
                 '&fw=' + Math.floor(editor.photo.faceRect.w) +  
                 '&fh=' + Math.floor(editor.photo.faceRect.h);
-        console.log('appended, url = ' + url);
-        return url;
+        //console.log('appended, url = ' + shareUrl);
+        return shareUrl;
     };
 
     var initWeixinShare = function() {
-        url = getWeixinShareUrl();
-        console.log('initWeixinShare(), url =', url);
+        setWeixinShareUrl();
+        console.log('initWeixinShare(), shareUrl =', shareUrl);
         if (! isWeiXin()){
             return;
-        }        
+        }
 
-        var ti = '2015春节贺卡';
-        var de = '喜气洋洋祝福来';
+        var ti = editor.greeting.text.title;
+        var de = editor.greeting.text.desc;
         var imageUrl = "http://file.market.xiaomi.com/thumbnail/PNG/l114/c8c/92831985ac381d011aeb3fadc8c85afe480b1d99";
         wx.onMenuShareTimeline({ //分享到朋友圈
             title: ti, 
-            link: url,
+            link: shareUrl,
             imgUrl: imageUrl
         });
         wx.onMenuShareAppMessage({ //发送给朋友
             title: ti,
             desc: de,
-            link: url,
+            link: shareUrl,
             imgUrl: imageUrl
         });
         wx.onMenuShareQQ({
             title: ti,
             desc: de,
-            link: url,
+            link: shareUrl,
             imgUrl: imageUrl
         });        
     };
@@ -401,6 +403,7 @@ function EditorWinController(win) {
         
         showMan();
         win.find('bkg-list').setCurrent(editor.bkgId);
+        if (mode === MODE_EDITOR) win.find('intro-bkg').setVisible(true); // 前面一句会导致onChanged调用，这里打个补丁
 
         if (mode === MODE_VIEW || mode === MODE_PREVIEW) {            
             ss.initSpriteStinger("snowman");
@@ -418,6 +421,7 @@ function EditorWinController(win) {
         }
         
         showMan();
+        initWeixinShare();
     };
     
     this.manImageOnClick = function(img) {
@@ -426,6 +430,7 @@ function EditorWinController(win) {
         win.find('intro-man').setVisible(false);
         editor.manId = (editor.manId + 1) % MAN_LIST.length;
         showMan();
+        initWeixinShare();
     };
     
     this.onClickPreview = function() {
@@ -456,6 +461,7 @@ function EditorWinController(win) {
     };
     
     this.onClickRecord = function() {
+        win.find('intro-rec').setVisible(false);
         stopMusic();
 
         win.openWindow('win-record', function(resId) {
@@ -484,6 +490,7 @@ function EditorWinController(win) {
                 isShowProgressTips: 1, // 默认为1，显示进度提示
                 success: function (res) {
                     editor.greeting.voiceServerId = res.serverId; //返回音频的服务器端ID
+                    initWeixinShare();
                     console.log('recServerId = ' + recServerId);
                 }
             });            
@@ -577,6 +584,7 @@ function EditorWinController(win) {
                             success: function (res) {
                                 //editor.photo.imgLocalId = res.serverId; // 返回图片的服务器端ID
                                 editor.photo.imgServerId = res.serverId; // 返回图片的服务器端ID
+                                initWeixinShare();
                             }
                         });
                     }
@@ -607,8 +615,26 @@ function EditorWinController(win) {
     this.onSwipeUp = function() {
         console.log('onSwipeUp()');
         if (mode === MODE_VIEW) {
-            win.openWindow('win-logo', null, true);
+            win.openWindow('win-logo', null, false);
         }
+    };
+    
+    this.onBkgChanged = function() {
+        console.log('bkg onChanged()');
+        if (mode === MODE_EDITOR) {
+            win.find('intro-bkg').setVisible(false);
+        }
+        initWeixinShare();
+    };
+
+    this.onClickWrite = function() {
+        console.log('onClickWrite()');
+        win.openWindow('win-write', function (retData) {
+            console.log('write window closed');
+            if (retData) {
+                editor.greeting.text = retData;
+            }
+        }, false, editor.greeting.text);
     };
 }
 
